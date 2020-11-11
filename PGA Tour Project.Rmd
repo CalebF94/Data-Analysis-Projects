@@ -1,0 +1,49 @@
+---
+title: "PGA Tour Project"
+author: "Caleb Fornshell"
+date: "11/11/2020"
+output: html_document
+---
+
+
+```{r setup, include=FALSE, echo=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+require(tidyverse)
+PGAdata=read_csv("C:\\Users\\Caleb\\Desktop\\jobs\\Projects\\PGA Tour\\PGA_cleaned.csv")
+```
+
+## Objective:
+In this project I want to analyze data that is based on PGA Tour players season
+statistics. I want to perform cluster analysis and determine which golfers could 
+be considered similar to one another. I will also perform use regression 
+techniques to generate models for predicting a golfers probability of winning
+in a particular year, and a golfers stroke average.
+
+## Data Collection and Cleaning
+This data was collected from the official PGA Tour website. The data was scraped
+using Power Query in Excel. Each statistic used had to be scraped to its own 
+table The tables were then read into SAS and merged using PROC SQL. Once the 
+preprocessing of data was completed it was read into R.
+
+## Variables
+In total the dataset contains 18 variables, of which 3 are identifying variables
+2 are response variables, and 12 are predictor variables. A complete description 
+of the variables can be found here. A subset of the data is shown below
+
+```{r}
+summary(str(PGAdata))
+PGAdata[sample(1:100,6,replace=FALSE),]
+PGAdata
+```
+
+
+
+## Exploratory Data Analysis
+
+### Golfers and Years Analysed
+```{r}
+length(unique(PGAdata$Golfer))
+unique(PGAdata$Year)
+```
+
