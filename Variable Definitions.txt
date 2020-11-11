@@ -1,0 +1,37 @@
+Variable Definitions: (Name in parentheses indicate variable name in datafile)
+
+Golfer: (Golfer) Identifies name of player as "firstname lastname". Identification variable.
+
+Year: (Year) Indicates which year the variables are collected. Identification variable
+
+Player: (Player) A concatenation of Golfer and Year as "firstname lastname (Year)". Identification variable
+
+Winner: (Winner) Indicator variable determining whether the player won an official PGA Tour event in the specified year. Response variable
+
+Stroke Average: (StrokeAverage) Average number of strokes per round for the specified year. Response variable
+
+Clubhead Speed: (AvgClubheadSpeed) Speed at which the club impacts the ball (mph) on Par 4 and Par 5 tee shots where a radar measurement was taken.
+
+Ball Speed: (AvgBallSpeed) Peak speed of the golf ball at launch (mph) on Par 4 and Par 5 tee shots where a valid radar measurement was taken.
+
+Launch Angle: (LaunchAngle) Vertical launch angle of the ball immediately after leaving the club on Par 4 and Par 5 tee shots where a valid radar measurement was taken. 
+
+Spin Rate: (SpinRateOTT) RPM's of the golf ball immediately after leaving the club on Par 4 and Par 5 tee shots where a valid radar measurement was taken.
+
+Approaches From Inside 100 Yards: (AvgApproachLT100) The average distance the ball comes to rest from the hole (in feet) when a player's approach is hit from a distance less 	than 100 yards. The approach shot distance must be determined by a laser, and it must originate from the fairway (or the tee box on a par 3). The approach must also end on or around the green or in the hole. Note: 'Around the green' indicates the ball is within 30 yards of the edge of the green.
+
+Approaches From >100 Yards: (AvgApprochGT100) The average distance the ball comes to rest from the hole (in feet) when a player's approach is hit from a distance greater than or equal to 100 yards. The approach shot distance must be determined by a laser, and it must originate from the fairway (or the tee box on a par 3). The approach must also end on or around the green or in the hole. Note: 'Around the green' indicates the ball is within 30 yards of the edge of the green.
+
+Sand Save Percentage: (SandSave) The percent of time a player was able to get 'up and down' once in a greenside sand bunker (regardless of score). Note: 'Up and down' indicates it took the player 2 shots or less to put the ball in the hole from that point.
+
+Proximity to Hole (ProxToHoleARG): (Golfer) The average distance to the hole (in feet) after hitting the ball onto the putting surface from around the green. Only those shots determined by a laser will be included. (Note: 'Around the green' indicates the player is within 30 yards of the edge of the green)
+
+Putting From >20': (PuttGT20Made) For all holes, this is the percent of putts made when the ball is more than 20 feet from the hole. In order to be ranked a minimum of ten attempts must be made.
+
+Putting From 15'-20': (Putt15_20Made) For all holes where putting distance was determined with a laser, the percent of putts made when the ball is greater than 15 feet and less than or equal to 20 feet from the hole. In order to be ranked, a minimum of ten attempts must be made.
+
+Putting From 10'-15': (Putt10_15Made) For all holes where putting distance was determined with a laser, the percent of putts made when the ball is greater than 10 feet and less than or equal to 15 feet from the hole. In order to be ranked, a minimum of ten attempts must be made.
+
+Putting From Inside 10': (PuttLT10Made) For all holes where putting distance was determined with a laser, the percent of putts made when the ball is less than or equal to 10 feet from the hole. In order to be ranked, a minimum of ten attempts must be made. 
+
+
