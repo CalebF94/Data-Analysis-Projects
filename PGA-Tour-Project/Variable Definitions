@@ -6,7 +6,7 @@ Year: (Year) Indicates which year the variables are collected. Identification va
 
 Player: (Player) A concatenation of Golfer and Year as "firstname lastname (Year)". Identification variable
 
-Winner: (Winner) Indicator variable determining whether the player won an official PGA Tour event in the specified year. Response variable
+Winner: (Winner) Indicator variable determining whether the player won an official PGA Tour event in the specified year. From Wikipedia,  response variable
 
 Stroke Average: (StrokeAverage) Average number of strokes per round for the specified year. Response variable
 
