@@ -5,7 +5,7 @@ This repository contains examples projects that I have completed. Each project c
 
 ## COVID-19 Project
 
-This was class project I completed in my survival analysis course. In the project, I compare the effect that COVID-19 had three countries in the early stage of the pandemic. I perform an exploratory data analysis, and then perform some statistical analyses using techniques such as Kaplan-Meier and Cox regression. The analysis is performed using R, Rmarkdown, and Latex. R packages used include ggplot2, dplyr, lubridate, and survival.
+This was class project I completed in my survival analysis course. In the project, I compare the effect that COVID-19 had three countries in the early stage of the pandemic. I perform an exploratory data analysis, and then perform some statistical analyses using techniques such as Kaplan-Meier and Cox regression. The analysis is performed using R, Rmarkdown, and Latex. R packages used include ggplot2, dplyr, lubridate, muhaz, survival, and survminer.
 
 
 
