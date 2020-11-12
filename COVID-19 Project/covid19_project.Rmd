@@ -1,0 +1,1277 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+<!---
+ Filename: E:\...\Covid-19 Project.Rmd
+ Author: Caleb Fornshell
+ Date: 3/31/2020
+ 
+ 
+ This file generates my final written report for my Covid-19 project. This project will use the
+ results from "project code.R" and can generate a PDF.
+--> 
+
+---
+fontsize: 12pt
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+header-includes: \usepackage{graphicx} \usepackage{float} \usepackage{wrapfig} \usepackage{lipsum} \usepackage{blindtext} \usepackage{caption} \usepackage[font=small,skip=0pt]{caption}
+
+always_allow_html: true
+---
+
+
+```{r message=FALSE, warning=FALSE, echo=FALSE}
+##installs missing packages if not already installed
+
+frequire <- function(x){
+  for( i in x ){
+    #  require returns TRUE invisibly if it was able to load package
+    if( ! require( i , character.only = TRUE ) ){
+      #  If package was not able to be loaded then re-install
+      install.packages( i , dependencies = TRUE )
+      #  Load package after installing
+      require( i , character.only = TRUE )
+    }
+  }
+}
+
+#  Then try/install packages...
+frequire( c("tidyverse","lubridate" , "survival", "survminer","ggfortify",
+            "gtable","muhaz", "grid","gridExtra","gmodels","xtable",
+            "summarytools", "ggpubr") )
+
+
+#calling the code that is in Appendix A Graphs
+source(file = "project code.R")
+options(xtable.timestamp="")
+st_options(headings = FALSE)
+
+```
+
+
+Caleb Fornshell \newline
+Covid-19 Project \newline
+5/15/2020
+
+#### Research Question:
+What are the survival and hazard functions in patients that have been diagnosed with COVID-19, and what effect does the age, sex, and country of diagnosis have on the patient’s survival?  COVID-19 affects different groups of people in unique ways. Quantifying who is most at risk and how the disease progresses in different populations can provide valuable information in the treatment and preparation of the disease.
+
+#### Data:
+Three datasets were used in this study. One dataset contained individual level details for confirmed COVID-19 cases in South Korea. Another dataset contained individual level details for confirmed cases in India, and the last dataset contains case information for confirmed cases in Florida. The South Korean and Indian datasets are available from Kaggle, and the Florida dataset is compiled from daily reports released by the Florida Department of Health. Only cases with non-missing information will be used. These datasets will be combined into a single dataset to allow for easier computation in further analyses.
+
+\underline{South Korean Data}: Link: https://www.kaggle.com/kimjihoo/coronavirusdataset#Case.csv \newline 
+  The South Korean data comes from Kaggle’s Data Science for COVID-19(DS4C) dataset. The dataset was built using information gathered from the Korea Centers for Disease Control and Prevention(KCDC). This study will focus on cases that were confirmed on 02/20/2020 through 3/26/2020 for a study period of 35 days(5 weeks). This time period begins just prior to a surge of cases and contains the days with the most confirmed cases. 
+The variables of interest from this dataset include, age, sex, confirmed_date, released_date, and deceased_date. In order to perform survival analysis on this data, basic data cleaning, such as data type conversion and observation selection, was performed as well as creating a survival time and censored status variables. The survival time was defined as the time, in days, from the confirmed date to either death, recovery, or the end of the study period. Cases that ended in recovery or that were still ongoing by the end of the study period were considered censored, and patients that died before the end of the study had an observed event. Censoring information is given by the "end.status" variable. Further details of the data cleaning and preparation can be seen in the R-code provided in Appendix B. A visualization of a portion of the cleaned data is shown in Figure 1 of Appendix A.
+
+\underline{Indian Data}: Link:www.kaggle.com/sudalairajkumar/covid19-in-india#IndividualDetails.csv \newline 
+  The Indian data was collected by volunteers who gather information from reading state bulletins and official handles and then compile their findings on www.covid19india.org. This study is using information from cases that were confirmed between 2/29/2020 and 4/4/2020(5 weeks).
+The variables of interest from the Indian dataset are age, gender, diagnosed_date, current_status, and status_change_date. Again, basic data cleaning including data type conversion, observation selection was performed. Using the last 3 variables, a survival time and a censoring variable were constructed where the survival time and censoring status are similar to the Korean dataset. Slight modifications to the age and gender variables were made in order to match the format of the Korean dataset.  Further details can be found the R-code provided in Appendix B. A visualization of a portion of the cleaned data is shown in Figure 2 of  Appendix A.
+
+\underline{Florida Data}: Link: https://www.floridadisaster.org/covid19/covid-19-data-reports/ \newline 
+  The data from Florida was compiled through daily reports released through the public health department of Florida. The Florida data consisted of cases that were confirmed between the dates of 3/13/2020 and 4/17/2020. This data was presented in two parts; One dataset for deaths and another dataset for cases. I then had to merge the two datasets using the dplyr package in R. This dataset contained the variables Age, Sex, Confirmed Date, and Death Date(if applicable). I then had to calculate the survival time from Confirmed Date to Death Date or the end of the study period. This data did not provide information regarding when or if a patient had recovered, so the censored observations were all considered to have still been under study at the end of the study period. This should not impact the analysis as complete dates were known for non-censored observations. A visualization of the Florida data is shown in Figure 3 of Appendix A
+
+#### Exploratory Data Analysis:
+Relevant descriptive statistics for the variables of interest (sex, age.group, date of diagnosis, and survival time) were performed. A large difference in sample sizes for each location was seen with Florida having the largest sample size followed by South Korea and then India(24,554, 2360, and 819). Early analysis suggests differences in country, age, and sex. Full results, tables, and graphs are shown in Appendix A.
+
+
+Gender: \newline 
+  South Korea, Florida, and India had varying proportions of females: 57%, 50%, and 25%, respectively. This shows a large difference in the makeup of each country’s cases. A difference in mortatility is not obvious by observing the cross tabulation tables of end state by gender.(For complete results see Appendix A: Figure 4, Tables 1-3)
+
+Age Group: \newline 
+   For all three locations, most patients were working aged adults aged 20-69. The Indian data has a smaller proportion of patients older than 70. This could suggest that South Korea and Florida are focusing tests on at-risk older populations, or it may reflect demographic differences between locations. Based on the cross tabulation tables, it appears that the elderly population dies at an increased rate.(For complete results see Appendix A: Figure 5, Tables 4-6)
+
+Date of Diagnosis: \newline 
+  Analysis of the dates of diagnosis show that the outbreaks began at different times for each location. It appears that the outbreak was controlled by the end of South Korea's study period. The progress of the outbreaks in the other locations is not apparent. It is important to note the changing scale of the y-axis, as Florida has many more daily cases.(For complete results see Appendix A: Figure 6)
+
+End Status and Survival Time: \newline 
+  Analysis of the end status of cases shows that for all locations a small proportion of cases had ended in death by the end of the study with South Korea's death rate being the lowest(SK:1.8%, India:2.8%, FL:2.9%), although many cases were still ongoing. This shows that many of the cases were censored observations (hospitalized/isolated, released, or alive). Analyzing simple descriptive statistics of survival times, it appears that there may be a difference in the survival times between locations(Appendix A: Table 7). South Korea has the longest mean survival time with India having the shortest. This could be due to differences in healthcare or the individuals being tested. Only the sickest may be getting tested in India, whereas South Korea may be testing more less severe cases. (For complete results see Appendix A: Figures 7-8, Tables 1-7)
+ 
+ 
+#### Univariate Survival Analysis and Inference
+
+I will begin by analyzing one variable at a time. I will be using the stratified k-sample log rank test to determine if there are differences between different levels of a particular variable while controlling for the other variables. I will be testing the hypotheses:
+
+\begin{equation}
+\begin{aligned}
+& H_0: S_1(t)=..=S_k(t) where\; k\; is\; the\; number\; of\; levels\; for\; a\; variable \\
+& H_1: S_1(t)\neq ... \neq S_k(t) for\; at\; one\; i\neq j\; in\; 1,...,k 
+\end{aligned}
+\end{equation}
+
+for each of the variables country, sex, and age. The k-sample log-rank test is a non-parametric test with few assumptions to check. The only assumption that needs to be met is that censored observations are not at increased risk of death. This assumption is met as there is no evidence to suggest otherwise.  
+
+Along with performing the stratified log-rank tests, both the survival and hazard functions will be drawn to illustrate the differences in the levels of the variables. Piecewise Kaplan-Meier survival curves and 95% confident intervals will be drawn using the `survdiff()` function from the survival package. Smoothed hazard curves will be drawn using the `muhaz()` function from the muhaz package. Smooth survival curves based on these hazard calculations will be shown along with the KM curves.
+
+First, I constructed overall survival and hazard curves. This is shown in Figure 1. This figure shows that overall a patient is most at risk of dying shortly after being diagnosed with COVID-19.
+
+\par 
+\begin{wrapfigure}[33]{R}[10pt]{10cm}
+\includegraphics[width=10cm, height=8cm]{overall.pdf}
+\\
+\\
+\\
+\includegraphics[width=10cm, height=8cm]{countrySurv.pdf}
+\end{wrapfigure}
+
+The first variable analyzed was country. The survival and hazard curves are shown in Figure 2. This figure clearly shows that there is a difference between survival curves depending on the country of diagnosis. It appears that South Korea has a survival curve that is stochastically longer than both Florida and India. The stratified log-rank statistic supports this claim. A Chi-Square test statistic of 42 (p-value=8E-10) indicates highly significant results(Appendix A: Table 8). Further analysis of the test shows that this is largely due to India having substantially more deaths and South Korea having fewer deaths than expected under the null hypothesis. Pairwise comparisons between countries show that South Korea had stochastically longer survival times than India and Florida, and India and Florida were not significantly different from each other(Appendix A: Table 9).
+
+
+It is worth noting that the smooth survival curve constructed by the `muhaz()` function for India does not closely follow the KM survival curve. Instead, the smoothed curve indicates a survival function that would be much worse for patients. This could be due to the high number of Indian patients who died shortly after diagnosis as shown in the steep drop in the Indian KM survival curve shortly after t=0 but levels off by t=5.
+
+One possible issue this analysis shows is that a proportional hazards model may not be appropriate. This is demonstrated as the survival curves of Florida and India intersect. In a proportional hazards model the survival curves should be parallel. This condition is examined further in a later section.
+
+The second variable examined was sex. The survival and hazard curves are shown in Figure 3. This figure shows that the survival curve for females is stochastically longer than for males. The stratified log-rank test also supports this claim(Appendix A: Table 10). The test statistic is a Chi-Square value of 44.3 (p-value=3E-11) indicating highly significant results. The table of results shows that females had 92 fewer deaths than would be expected if $H_0$ were true.
+
+The last variable analyzed was age. I created a categorical variable which broke down the age into several categories, similar to those used in the exploratory data analysis. However, some groups with a low number of patients were combined to increase the sample size for groups and make the analysis more appropriate. The age groups used in completion of the stratified log-rank test were "<20", "30s", "40s", 50s", "60s", and ">70". 
+
+\par 
+\begin{wrapfigure}[33]{R}[10pt]{10cm}
+\includegraphics[width=10cm, height=8cm]{sexSurv.pdf}
+\\
+\\
+\\
+\includegraphics[width=10cm, height=8cm]{ageSurv.pdf}
+\end{wrapfigure}
+
+The survival and hazard curve for each age group are shown in Figure 4. This figure clearly shows that the older age groups are more at risk of dying from Covid-19 and have stochastically shorter survival curves. The four youngest age groups are nearly impossible to distinguish in this graph, but the older age groups each have a significantly lower survival curve. The Chi-Square test statistic from the stratified log-rank test also supports the alternative hypothesis with a value of 1756 (p-value < 2E-16) indicating extremely significant results(Appendix A: Table 11). 
+
+Upon further analysis of the results we see that there were no observed deaths in the youngest age group and only one death in the "20s" group. We also see that the only age groups having a higher number of deaths than expected is the "60s" and ">70" groups with the ">70" group accounting for 70% of all deaths even though it only accounted for 17% of cases. Pairwise comparison between different age groups show that the two youngest groups(<20 and 20s) are not significantly different from each other, but are stochastically longer than all the other groups. We also see that the oldest group(>70) is stochastically shorter than all other groups. Complete pairwise comparisons are shown in Appendix A(Table 12), but in general, younger groups have longer survival times than older groups.
+
+These univariate analyses demonstrate that each of the three variables analyzed is significant while controlling for the other two variables. The disease appears to affect elderly populations and males more so than it does the young and females. The country of diagnosis also appears to have an effect. There are most likely many other variables such as underlying diseases and overall health that can affect the outcome of patients; however, this analysis was limited by the data available.
+
+#### Fitting Cox Proportional Hazards Models
+
+In the following section Cox Proportional Hazards models will be fit to the COVID-19 survival data. Numerous Cox PH models will be fit with different combinations of covariates. The first models will use the age groups from the stratified k-sample log-rank tests from the previous section and other models will consider age as a numeric value; that is, the patient's age in years. 
+
+\begin{wraptable}[8]{l}{6cm}
+\begin{tabular}{|c|c|c|c|}\hline
+          & chisq & df   &   p   \\ \hline
+age.group &  4.46 & 6    & 0.615 \\ \hline
+sex       &  2.92 & 1    & 0.088  \\ \hline
+country   & 35.96 & 2    & <.0001 \\ \hline
+GLOBAL    & 41.88 & 9    & <.0001 \\ \hline
+\end{tabular}
+\caption{Results from PH test}
+\end{wraptable}
+
+Before any model can be fit, the assumption of proportional hazards must be valid. The proportional hazard assumption assumes that the hazard rate for one patient is proportional to the hazard rate of another patient and this proportion is constant over all times. The proportional hazards assumption can be checked visually and using a hypothesis test. Visually, this assumption can be checked by inspecting the hazard curves of different groups of the sampled population. If the proportional hazards assumption is valid the curves should be parallel and never cross, although this does not guarantee the assumption is valid. 
+
+\begin{wraptable}[8]{l}{5.5cm}
+\begin{tabular}{|c|c|c|c|}\hline
+          & chisq & df   &   p   \\ \hline
+age.group &  3.36 & 6    & 0.760 \\ \hline
+sex       &  2.92 & 1    & 0.110  \\ \hline
+GLOBAL    &  5.92 & 7    & 0.550 \\ \hline
+\end{tabular}
+\caption{Results from PH test stratified by country}
+\end{wraptable}
+
+As shown in Figure 2, the survival and hazard curves for country are clearly not parallel. Thus, the assummption of proportional hazards is violated. This conclusion is supported by performing a hypothesis test using the `cox.zph()` function from the survival package. This procedure produces a p-value of <.0001 meaning the null hypothesis of proportional hazards is violated due to the variable country(Table 1).  To correct for this issue, the models will be stratified on the variable country. Testing for violations in the stratified model generates insignificant p-values for both sex and age.group; the assumption of proportional hazards is reasonably met in the stratified model(Table 2). 
+
+\begin{wraptable}[12]{l}{12cm}
+\begin{tabular}{|c|c|c|c|c|c|}\hline
+              & coef   & exp(coef) & se(coef) & z      & p        \\ \hline
+age.group20s  & 11.53  & 1.01e5    & 672.1    & 0.017  & 0.986   \\ \hline
+age.group30s  & 14.08  & 1.30e6    & 672.1    & 0.021  & 0.983   \\ \hline
+age.group40s  & 14.67  & 2.35e6    & 672.1    & 0.022  & 0.983   \\ \hline
+age.group50s  & 15.29  & 4.38e6    & 672.1    & 0.023  & 0.982   \\ \hline
+age.group60s  & 16.34  & 1.25e7    & 672.1    & 0.024  & 0.981   \\ \hline
+age.group>70  & 17.72  & 4.97e7    & 672.1    & 0.026  & 0.979   \\ \hline
+sexmale       & 0.4930 & 1.637     & 0.0748   & 6.954  & 4.27e-11 \\ \hline
+
+\end{tabular}
+\caption{PH models with discrete age groups. LRT=1411, 7 df,   p<.0001, 778 events, n=27733}
+\end{wraptable}
+
+Using Cox regression, a stratified model is fit to the data, and the results are shown in Table 3. The model has a LRT test statistic of 1411 with an overall p-value <.0001. The most significant variable based on the Wald test scores is sex which indicates being male increases a patient's hazard rate by 64% when the other variables are held constant. The age group coefficients are all insignificant based on the Wald tests, which is unexpected as the stratified log-rank test indicated age group was significant. Therefore, a partial log-likelihood \newpage test was used to determine if age.group should remain in the model. The results, shown in Appendix A Table 13, indicate that age.group is significant and should remain in the model.
+
+\begin{wraptable}[7]{l}{10cm}
+\begin{tabular}{|c|c|c|c|c|c|}\hline
+          & coef   & exp(coef) & se(coef) & z      & p        \\ \hline
+age       & 0.0871 & 1.0910    & 0.0025   & 34.151 & <2e-16   \\ \hline
+sex       & 0.5653 & 1.7601    & 0.0751   & 7.529  & 5.11e-14 \\ \hline
+
+\end{tabular}
+\caption{PH models with numeric age. LRT=1589, 2 df, p<.0001, 775 events, n=27411}
+\end{wraptable}
+
+A more interpretable model may be achieved if the variable for age is considered a continuous numeric variable rather than using discrete categories. A model is fit using the age of the patient in years, sex, and stratifing by country. Using a hypothesis test, we see that proportional hazards can reasonably be assumed(Appendix A: Table 14), and that the two variables produce a statistically significant model with all coefficients having significance based on the Wald test statistics(Table 4). This model is easily interpretated as each one year increase in age increases the hazard rate by 9% with sex held constant. We also see this model increases the hazard rate for males by 76% when age is held constant. This model had a slightly smaller sample size as the age of patients in South Korea was calculated based on their birth year, and some patients did not have birth year recorded.
+
+We can compare the two models to determine which performs better. This comparison can be made using Akaike Information Criterion(AIC). The model with the smaller AIC is preferred. This is an imperfect comparison as the model with continuous age has slighlty fewer observations. The model with discrete age groups had an AIC of 13,344 versus an AIC of 13,097 for the model with continuous age. We conclude that the second model is slighly better.
+
+#### Extended Cox Model
+\setcounter{figure}{4}
+
+\begin{wraptable}[11]{l}{12cm}
+\begin{tabular}{|c|c|c|c|c|c|}\hline
+                & coef   &exp(coef) & se(coef) & z      & p     \\ \hline
+age             & 0.087  & 1.091    & 0.003    & 34.165 & <.0001\\ \hline
+sexmale         & 0.565  & 1.760    & 0.075    & 7.526  & <.0001\\ \hline
+I(India)        & 3.364  & 28.892   & 0.385    & 8.733  & <.0001\\ \hline
+I(Korea)        & 0.209  & 1.233    & 0.257    & 0.814  & 0.4155\\ \hline
+I(India):s.time &-1.020  & 0.361    & 0.289    &-3.534  & 0.0004\\ \hline
+I(Korea):s.time &-0.099  & 0.906    & 0.033    &-2.978  & 0.0029\\ \hline
+
+\end{tabular}
+\caption{Reduced extended Cox model. LRT=1664, 6 df, p<.0001, 775 events, n=354399. I(.) is the indicator function.}
+\end{wraptable}
+
+The models from the previous section were all stratified on country. This made calculating a coefficient and performing inference on the country variable impossible. An extended Cox model with numeric age and using an interaction between country and survival time can make inference on the country variable possible. An extended Cox model will consider the coefficient value for each country a time dependent variable. This is reasonable as the plot of Shoenfeld residuals shows that the coefficient for country is not constant over time(Appendix A: Figure 9). This figure shows that the value of the country coeffient is higher at smaller values of t. Fitting a model with interactions between all covariates and survival time also provides another method of testing the proportional hazard assumption. Fitting this full model shows that age and sex do not violate the PH assumption(Appendix A: Table 15) agreeing with the previous findings. Based on these results a model was constructed using numeric age, sex, and interaction terms between the country indicators and survival time variables with Florida being the baseline location.
+
+\par 
+\begin{wrapfigure}[15]{R}[10pt]{8cm}
+\includegraphics[width=8cm, height=6.5cm]{extcoxHR.pdf}
+\caption{Hazard Ratios for variables in the simplified Extended Cox Model. I(India):s.time CI (13.58, 61.47)}
+\end{wrapfigure}
+
+The results of this model(Table 5) indicate all coefficients are significant at an alpha level of 0.05 with the exception of the Korea indicator variable. The single largest contributing varible appears to be whether the patient is diagnosed in India with an estimated coefficient value of 3.364. A visualization showing the hazard ratios for each varible along with 95% confidence intervals is given in Figure 5. The value for the India indicator is too large to be easily shown in the chart. 
+
+#### Conclusions and Future Research
+
+This study demonstrates that age, sex, and country all have significant effects on the survival of COVID-19 patients. Performing stratified log-rank tests show that there are significant differences in the levels of all variables. In general, young patients and females are less likely to die from the disease. It also appears that of the three countries studied South Korean patients had the greatest chance of survival.
+
+While this study provided significant results, there were a number of areas where the study could have been improved. Improvements could be made by including more factors that are thought to have an impact on a patient's survival. These factors could include the presence of underlying health conditions, the patient's race and economic status, the patient's treatments, and the inclusion of more locations. Many of these factors may be included as more time passes and more complete data is collected and made available to the public.
+
+Another aspect of this analysis that could be improved and would add clarification to the results, would the inclusion of a variable indicating when the patient's first symptoms occurred. This information was available in a small number of South Korean cases, but not enough to include it in the analysis. Having this variable would allow for the progression of the disease to be more accurately described, and would allow for a more realistic hazard curves.
+
+
+
+
+
+
+<!------------------------------------       
+
+Appendix figures and tables start here         
+
+-------------------------------------->
+
+
+
+
+\newpage 
+\setcounter{figure}{0}
+\setcounter{table}{0}
+#### Appendix A: Graphs and Tables
+
+\begin{figure}[h]
+    \centering
+    \includegraphics{k_viz.png}
+    \caption{Visualization of South Korean Data. "X" represents a death was observed, and "O" represents a censored observation.}
+\end{figure}
+
+
+\begin{figure}[h]
+    \centering
+    \includegraphics{i_viz.png}
+     \caption{Visualization of Indian Data. "X" represents a death was observed, and "O" represents a censored observation.}
+\end{figure}
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics{f_viz.png}
+     \caption{Visualization of Florida Data. "X" represents a death was observed, and "O" represents a censored observation.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics{sex.pdf}
+    \caption{Breakdown of sex by country}
+\end{figure}
+
+
+```{r message=FALSE, warning=FALSE, results="asis", echo=FALSE}
+#cross tabulation tables for gender and end.state
+print(ctable(korea2$sex, korea2$end.state, justify = "c",
+             caption="Korea end status by sex"), method="pandoc")
+print(ctable(india2$gender, india2$end.state, justify = "c",
+             caption="India end status by sex"), method="pandoc")
+print(ctable(florida2$sex, florida2$end.state, justify = "c",
+             caption="Florida end status by sex"), method="pandoc")
+```
+
+\begin{figure}[H]
+    \centering
+    \includegraphics{Age.png}
+    \caption{Breakdown of age by country}
+\end{figure}
+
+```{r results="asis", echo=FALSE}
+Age=factor(florida2$age,levels = levels)
+print(ctable(x=Age, y=florida2$end.state, 
+             justify="c",caption="Florida Age by End Status"), method="pandoc")
+```
+
+\newpage
+```{r results="asis", echo=FALSE}
+Age=factor(korea2$age,levels = levels)
+print(ctable(x = Age, y=korea2$end.state, 
+             justify = "c", caption="Korea Age by End Status"), 
+      method="pandoc")
+
+Age=factor(india2$age,levels = levels)
+print(ctable(x=Age, y=india2$end.state, 
+             justify = "c", caption="India Age by End Status"), 
+      method="pandoc")
+
+```
+
+\begin{figure}[H]
+    \centering
+    \includegraphics{casesbydate.png}
+    \caption{Daily cases for each Country}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics{endstate.png}
+    \caption{Patient status at the end of study period. Dead/Deceased indicates a non-censored observation.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics{surv.png}
+    \caption{Distribution of survival times for each country.}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|c|c|c|c|}\hline
+            &  mean             & Median              & Std. Dev.       \\ \hline
+Florida     & `r f.sum["mean"]` & `r f.sum["median"]` & `r f.sum["sd"]` \\ \hline
+India       & `r i.sum["mean"]` & `r i.sum["median"]` & `r i.sum["sd"]` \\ \hline
+South Korea & `r k.sum["mean"]` & `r k.sum["median"]` & `r k.sum["sd"]` \\ \hline
+\end{tabular}
+\caption{Simple desriptive statistics for survival times}
+\end{table}
+
+
+\vspace{5mm}
+
+```{r echo=TRUE, results='hide'}
+survdiff(Surv(s.time, end.status)~country+strata(age.group, sex), data=combined)
+```
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|c|c|c|c|c|}\hline
+          & N     & Observed & Expected & $(O-E)^2/E$ & $(O-E)^2/V$ \\ \hline
+Florida   & 24554 & 713      & 709.03   & 0.022       & 0.257     \\ \hline
+India     & 819   & 23       & 7.18     & 34.864      & 35.730    \\ \hline
+Korea     & 2360  & 42       & 61.79    & 6.337       & 7.085     \\ \hline
+\end{tabular}
+\caption{Results For Stratified Log-Rank on Country. Chisq=42, df=2, p=8e-10}
+\end{table}
+
+\newpage
+```{r echo=TRUE, results='hide', eval=FALSE}
+pairwise_survdiff(Surv(s.time, end.status)~country, data=combined)
+```
+
+\vspace{5mm}
+```{r results="asis", message=FALSE, echo=FALSE}
+print(xtable(pw.country$p.value, caption="P-values for pairwise comparison of Countries", 
+             digits = 4, method="pandoc" ), comment=FALSE )
+```
+
+
+
+\vspace{5mm}
+```{r eval=FALSE}
+survdiff(Surv(s.time, end.status)~sex+strata(age.group, country), data=combined)
+```
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|c|c|c|c|c|}\hline
+         & N     & Observed & Expected & $(O-E)^2/E$ & $(O-E)^2/V$ \\ \hline
+Female   & 13715 & 286      & 378      & 22.3        & 44.3        \\ \hline
+Male     & 14018 & 492      & 400      & 21.1        & 44.3        \\ \hline
+\end{tabular}
+\caption{Results For Stratified Log-Rank on Sex. Chisq=44.3, df=1, p=3e-11}
+\end{table}
+
+
+
+
+
+\vspace{5mm}
+```{r eval=FALSE}
+survdiff(Surv(s.time, end.status)~age.group+strata(country, sex), data=combined)
+```
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|c|c|c|c|c|}\hline
+       & N    & Observed & Expected  & $(O-E)^2/E$& $(O-E)^2/V$ \\ \hline
+$<$20  & 899  & 0        & 23.5      & 23.48      & 24.44       \\ \hline
+ 20s   & 3787 & 1        & 105.5     & 103.54     & 121.27      \\ \hline
+ 30s   & 4299 & 15       & 125.2     & 96.97      & 116.20      \\ \hline
+ 40s   & 4668 & 28       & 131.7     & 81.62      & 98.60       \\ \hline
+ 50s   & 5188 & 57       & 145.6     & 53.96      & 66.62       \\ \hline
+ 60s   & 4173 & 132      & 119.7     & 1.27       & 1.51        \\ \hline
+$>$70  & 4719 & 545      & 126.8     & 1378.83    & 1659.83     \\ \hline
+\end{tabular}
+\caption{Results For Stratified Log-Rank on age group. Chisq=1756, df=6, p=<2e-16}
+\end{table}
+
+```{r echo=TRUE, results='hide', eval=FALSE}
+pairwise_survdiff(Surv(s.time, end.status)~age.group, data=combined)
+```
+
+```{r results="asis", message=FALSE, echo=FALSE}
+print(xtable(pw.agegroup$p.value, caption="P-values for pairwise comparison of age.group", 
+             digits = 4, method="pandoc" ), comment=FALSE )
+```
+
+
+```{r echo=FALSE, message=FALSE, results='hide'}
+print(xtable(mod.cox2, justify = "c", method="pandoc",
+             caption="Stratified Cox PH model results. LRT=1540  on 8 df, p=<
+                      2.2e-16 n= 27733, number of events= 778  "), comment=FALSE)
+```
+
+
+\newpage
+```{r echo=TRUE, message=FALSE, warning=FALSE, results='hide'}
+anova(mod.cox1, mod.cox2)
+```
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|c|c|c|c|}\hline
+            & loglik   & Chisq   & DF &  P-value \\ \hline
+Model 1     &  -6664.8 &  $-$    & $-$&   $-$      \\ \hline
+Model 2     &  -7349.1 & 1368.4  & 6  &  <.0001  \\ \hline
+\end{tabular}
+\captionsetup{format=hang, justification=centering}
+\caption{Partial log-likelihood test to determine whether age.group is significant \newline
+          Model 1: $\sim$ age.group +sex + strata(country)\newline
+          Model 2: $\sim$ + strata(country)}
+\end{table}
+
+
+```{r echo=TRUE, message=FALSE, warning=FALSE, results='hide'}
+mod.cox3=coxph(Surv(s.time, end.status)~Age+sex+strata(country), data=combined)
+cox.zph(mod.cox3)
+```
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|c|c|c|}\hline
+            & chisq  & df   &   p   \\ \hline
+Age         &  0.444 & 1    & 0.510 \\ \hline
+sex         &  2.424 & 1    & 0.120 \\ \hline
+GLOBAL      &  3.011 & 2    & 0.220 \\ \hline
+\end{tabular}
+\caption{Results from PH test for stratified model with numeric age}
+\end{table}
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=15cm, height=6cm]{Schoenfeld res.png}
+    \caption{Shoenfeld residuals for country variable.}
+\end{figure}
+
+\newpage
+```{r echo=TRUE, message=FALSE, warning=FALSE, results='hide'}
+coxph(Surv(tstart, s.time, end.status) ~ 
+        Age + sexmale + countryIndia + countryKorea + countryIndia:s.time + 
+        countryKorea:s.time + sexmale:s.time+Age:s.time, data=x.mat.Age)
+sum.modF=summary(mod.extF)
+```
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{|c|c|c|c|c|c|}\hline
+                    & coef   &exp(coef) & se(coef) & z      & p     \\ \hline
+Age                 & 0.086  & 1.089    & 0.004    & 20.860 & <.0001\\ \hline
+sexmale             & 0.404  & 1.497    & 0.123    & 3.288  & 0.0010\\ \hline
+countryIndia        & 3.376  & 29.242   & 0.387    & 8.716  & <.0001\\ \hline
+countryKorea        & 0.183  & 1.201    & 0.258    & 0.711  & 0.4769\\ \hline
+countryIndia:s.time &-1.022  & 0.360    & 0.289    &-3.540  & 0.0004\\ \hline
+countryKorea:s.time &-0.095  & 0.909    & 0.033    &-2.841  & 0.0045\\ \hline
+sexmale:s.time      & 0.024  & 1.024    & 0.014    & 1.639  & 0.1012\\ \hline
+Age:s.time          & 0.000  & 1.000    & 0.000    & 0.474  & 0.6354\\ \hline
+
+\end{tabular}
+\caption{Full extended Cox model. LRT=1667, 8 df, p<.0001, 775 events, n=354399}
+\end{table}
+
+
+
+\newpage 
+
+#### Appendix B: R code
+see "project code.R"
+```{r echo=FALSE, eval=FALSE}
+#This is the code for my COVID 19 Project.
+#In this code I create many graphs and figures. I save many of these and call
+#them later in my latex code later.
+#
+#I had to convert some tables to latex by hand, but the results are from the 
+#code below.
+
+frequire <- function(x){
+  for( i in x ){
+    #  require returns TRUE invisibly if it was able to load package
+    if( ! require( i , character.only = TRUE ) ){
+      #  If package was not able to be loaded then re-install
+      install.packages( i , dependencies = TRUE )
+      #  Load package after installing
+      require( i , character.only = TRUE )
+    }
+  }
+}
+
+#  Then try/install packages...
+frequire( c("tidyverse","lubridate" , "survival", "survminer","ggfortify",
+            "gtable","muhaz", "grid","gridExtra","gmodels","xtable",
+            "summarytools", "ggpubr") )
+
+source(file = "project code.R")#calling the code thar is in Appendix A
+options(xtable.timestamp="")
+st_options(headings = FALSE)
+
+korea=as_tibble(read.csv("patient_korea.csv"))#make sure to update often
+india=as_tibble(read.csv("patient_india.csv"))
+florida=as_tibble(read.csv("patient_florida.csv"))
+
+#levels for age factors used in EDA and surv analysis
+levels=c("0s","10s","20s","30s","40s","50s","60s","70s","80s","90s","100s")
+levels2=c("<20","20s","30s","40s","50s","60s",">70")
+
+
+#Chunk to clean the Korean data. Converting data types of certain variables.
+#Also, creating survival time variable(s.time) based on diagnosis date, and
+#date of death, recovery, or end of study period.
+#
+#Created end.status variable indicating the state of patient at end of study.
+#Study period is from 2/20/2020 - 3/26/2020
+
+k.start=mdy("2/20/2020") #starting just before big rise in cases 
+k.end=k.start + 35 #five week study period
+
+korea2=korea %>%
+  #keeping and converting useful variables
+  transmute(
+            patient_id, global_num, birth_year, country, province,city,
+            sex=as.character(sex), 
+            age=as.character(age),#used in EDA
+            age.group=as.character(case_when(#used in surv analysis
+                  age %in% c("0s","10s") ~ "<20",
+                  age %in% c("70s","80s","90s", "100s") ~ ">70",
+                  TRUE ~ as.character(age))),
+            Age=2020-birth_year,#numeric age, used in Cox regression
+            disease=if_else(is.na(disease), 0,1),
+            infection_case,
+            infection_order,
+            symptom_onset_date=mdy(symptom_onset_date),
+            confirmed_date=mdy(confirmed_date),
+            released_date=mdy(released_date),
+            deceased_date=mdy(deceased_date),
+            state) %>%
+  #filtering observations to keep observations that occur in study period
+  filter(sex %in% c("male","female"),
+         confirmed_date>=k.start & confirmed_date<=k.end) %>%
+  #creating the s.time variable and the censor indicator variable
+  mutate(
+    #indicates state at end of study
+    end.state=case_when(
+      (deceased_date>k.end) ~ "Isolated",
+      (deceased_date <= k.end) ~ "Deceased",
+      (state=="isolated") ~ "Isolated",
+      ((state=="released") & (released_date>k.end)) ~ "Isolated",
+      ((state=="released") & (released_date<=k.end)) ~"Released",
+      ((state=="released") & (is.na(released_date)))~ "Released"),
+    
+    #calculating s.time based on end.state
+    s.time=case_when(
+      (confirmed_date==deceased_date)~.5,
+      (confirmed_date==k.end) & (end.state!="Deceased") ~ 1,#avoiding s.time=0
+      end.state=="Deceased" ~ as.numeric(deceased_date-confirmed_date),
+      end.state=="Isolated" ~ as.numeric(k.end-confirmed_date),
+      end.state=="Released" ~ as.numeric(released_date-confirmed_date))) %>%
+  
+  #Indicator variable indicating whether an observation is censored; 0=censor
+  mutate(end.status=if_else(end.state=="Deceased",1,0)) %>%
+  
+  #some deaths didn't have a death date so survival time not computed==>remove
+filter(!is.na(s.time),
+       s.time>0,
+       age!="") %>%
+  arrange(age)%>%
+  mutate(id=row_number())
+
+#one age was 66. Assuming they meant 60s
+korea2$age[korea2$age=="66s"]="60s"
+korea2$age.group[korea2$age.group=="66s"]="60s"
+
+
+
+
+#Chunk to clean the Indian data. Converting data types of certain variables.
+#Also, creating survival time variable(s.time) based on diagnosis date, and
+#date of death, recovery, or end of study period.
+#
+#Created end.status variable indicating the state of patient at end of study.
+#Study period is from 2/29/2020 - 4/4/2020
+
+i.start=mdy("2/29/2020")
+i.end=i.start+35
+
+india2 = india%>%
+  transmute(
+    age=as.numeric(as.character(age)),
+    gender=as.character(gender),
+    detected_district=as.character(detected_district),
+    detected_state=as.character(detected_state),
+    nationality=as.character(nationality),
+    diagnosed_date=dmy(diagnosed_date),
+    current_status,
+    status_change=dmy(status_change_date),
+    Age=age,#numeric age, used in Cox regression
+    age=case_when(#used in my EDA
+      age<10~"0s",
+      age<20~"10s",
+      age<30~"20s",
+      age<40~"30s",
+      age<50~"40s",
+      age<60~"50s",
+      age<70~"60s",
+      age<80~"70s",
+      age<90~"80s",
+      age<100~"90s",
+      TRUE~"100s"),
+    age.group=case_when(#used in survival analysis
+      Age<20~"<20",
+      Age<30~"20s",
+      Age<40~"30s",
+      Age<50~"40s",
+      Age<60~"50s",
+      Age<70~"60s",
+      TRUE~">70"),
+    #factor(age, levels = levels)
+    ) %>%
+  
+  filter(diagnosed_date>=i.start & diagnosed_date<=i.end)%>%
+  
+  mutate(
+    end.state=case_when(
+       current_status=="Recovered" & status_change<=i.end ~ "Recovered",
+       current_status=="Recovered" & status_change> i.end ~ "Hospitalized",
+       current_status=="Deceased"  & status_change<=i.end ~ "Deceased",
+       current_status=="Deceased"  & status_change >i.end ~ "Hospitalized",
+       TRUE ~ "Hospitalized"),
+    s.time=case_when(
+      end.state=="Hospitalized" ~ as.numeric(i.end-diagnosed_date),
+      end.state=="Recovered" ~ as.numeric(status_change - diagnosed_date),
+      end.state=="Deceased" ~ as.numeric(status_change-diagnosed_date)),
+    
+    #avoiding s.time=0
+    s.time=case_when(
+      (s.time==0) & (end.state!="Deceased")~1,
+      (s.time==0) & (end.state=="Deceased")~.5,
+      TRUE~s.time),
+    
+    end.status=if_else(end.state=="Deceased",1,0)) %>%
+  
+  filter(gender %in% c("M","F"),
+         !is.na(Age)) %>%
+  arrange(Age)%>%
+  mutate( id=row_number(),# don't want 0 based id
+gender=if_else(gender=="M","male","female")) 
+
+
+
+#Chunk to clean the Florida data. Converting data types of certain variables.
+#Also, creating survival time variable(s.time) based on diagnosis date, and
+#date of deathor end of study period.
+#
+#Created end.status variable indicating the state of patient at end of study.
+#Study period is from 3/13/2020 - 4/17/2020
+
+f.end=mdy("4/17/2020")
+f.start=f.end-35 #five week study period
+
+country=rep("Florida", dim(florida)[1])#24802 obs
+florida2=as_tibble(cbind(country, florida)) %>%
+  transmute(
+    Death,
+    "country"=as.character(country),
+    Age,#numeric age, used in Cox Regression
+    age=case_when(#used in EDA
+      between(Age,0,9)   ~ "0s",
+      between(Age,10,19) ~ "10s",
+      between(Age,20,29) ~ "20s",
+      between(Age,30,39) ~ "30s",
+      between(Age,40,49) ~ "40s",
+      between(Age,50,59) ~ "50s",
+      between(Age,60,69) ~ "60s",
+      between(Age,70,79) ~ "70s",
+      between(Age,80,89) ~ "80s",
+      between(Age,90,99) ~ "90s",
+      between(Age,100,120)~"100s"),
+    age.group=case_when(#used in surv analysis
+      between(Age,0,19)   ~ "<20",
+      between(Age,20,29) ~ "20s",
+      between(Age,30,39) ~ "30s",
+      between(Age,40,49) ~ "40s",
+      between(Age,50,59) ~ "50s",
+      between(Age,60,69) ~ "60s",
+      between(Age,70,120) ~ ">70"),
+    #factor(age, levels = levels),
+    sex=tolower(as.character(Gender)),
+    "confirmed_date"=mdy(Date.case),
+    died=if_else(Died==1,1,0,0),
+    end.state=if_else(died==1,"Dead","Alive"),
+    deceased_date=mdy(Death.Date))
+
+#setting death date to NA for censored patients
+florida2$deceased_date[florida2$died==0]=NA
+
+florida2=florida2 %>%
+  mutate(
+    #calulating survival times
+    s.time=case_when(
+      died==1 ~ as.numeric(deceased_date-confirmed_date),
+      died==0 ~ as.numeric(f.end-confirmed_date),
+      TRUE ~ -100)) %>%
+  mutate(
+    #avoiding s.times of 0
+    s.time=case_when(
+      died==1 & (confirmed_date==deceased_date) ~ .5,
+      died==0 & (confirmed_date==f.end) ~ 1,
+      TRUE ~ s.time
+    )
+  )%>%
+  #subsetting, and removing obs without suffient data for s.time 
+  filter(
+    confirmed_date>=f.start,
+    s.time>=0,
+    sex %in% c("male","female"),
+    !is.na(age)
+    #removed 248 cases
+  )%>%
+  #makes for better visual
+  arrange(Age)%>%
+  mutate(id=row_number(),
+         end.state=if_else(died==1,"Dead","Alive"))
+
+
+#################################
+#Visualization for Korean Sample#
+#################################
+k.viz=ggplot(data=korea2[2184:2199,], aes(y=id)) + 
+  #adding black dots
+  geom_point(aes(x=confirmed_date)) +
+  #adding lines 
+  geom_segment(aes(x=confirmed_date, 
+                   y=id, 
+                   xend=confirmed_date+s.time, 
+                   yend=id)) +
+  #adding x and o
+  geom_point(aes(x=confirmed_date+s.time, 
+                 shape=as.factor(end.status), 
+                 color=end.state,
+                 stroke=2) ) +
+  #printing s.time next to x and o
+  geom_text(aes(x=confirmed_date+s.time +2, y=id, 
+                label=s.time), size=6)+
+  #Cleaning up labels, legends, and titles
+  guides(shape=FALSE) +
+  scale_shape_manual(values = c(1,4)) +
+  scale_x_date(name = "Date", 
+               breaks=seq(k.start,k.end, length.out = 5), 
+               minor_breaks = "1 day") +
+  scale_y_continuous(breaks=c(1834:1847)) +
+  theme(plot.caption = element_text(hjust=0, size=18),
+        axis.text = element_text(size=16),
+        legend.position = "top",
+        legend.text = element_text(size=16),
+        legend.title = element_blank())
+
+#saving plot. Will call saved plot in RMD file
+#ggsave(filename = "k_viz.png", plot = k.viz, width = 15, height = 5.5)  
+
+
+#################################
+#Visualization for Indian Sample#
+#################################
+i.viz=ggplot(data=india2[805:819,], aes(y=id)) + 
+  #adding black dots
+  geom_point(aes(x=diagnosed_date)) +
+  #adding lines 
+  geom_segment(aes(x=diagnosed_date, 
+                   y=id, 
+                   xend=diagnosed_date+s.time, 
+                   yend=id)) +
+  #adding x and o
+  geom_point(aes(x=diagnosed_date+s.time, 
+                 shape=as.factor(end.status), 
+                 color=end.state,
+                 stroke=2) ) +
+  #printing s.time next to x and o
+  geom_text(aes(x=diagnosed_date+s.time +2, y=id, 
+                label=s.time), size=6)+
+  #Cleaning up labels, legends and titles
+  guides(shape=FALSE) +
+  scale_shape_manual(values = c(1,4)) +
+  scale_x_date(name="Date")+
+  #scale_y_continuous(breaks=seq(20,36, length.out = 13))+
+  theme(plot.caption = element_text(hjust=0, size=18),
+        axis.text = element_text(size=16),
+        legend.position = "top",
+        legend.text = element_text(size=16),
+        legend.title = element_blank())
+#ggsave(filename = "i_viz.png", plot = i.viz, width = 15, height = 5.5)  
+
+
+#################################
+#Visualization for Korean Sample#
+#################################
+f.viz=ggplot(data=florida2[21443:21458,], aes(y=id)) + 
+  #adding black dots
+  geom_point(aes(x=confirmed_date)) +
+  #adding lines 
+  geom_segment(aes(x=confirmed_date, 
+                   y=id, 
+                   xend=confirmed_date+s.time, 
+                   yend=id)) +
+  #adding x and o
+  geom_point(aes(x=confirmed_date+s.time, 
+                 shape=as.factor(end.state), 
+                 color=as.factor(end.state),
+                 stroke=2) ) +
+  #printing s.time next to x and o
+  geom_text(aes(x=confirmed_date+s.time +2, y=id, 
+                label=s.time), size=6)+
+  #Cleaning up labels, legends, and titles
+  guides(shape=FALSE) +
+  scale_shape_manual(values = c(1,4)) +
+  scale_color_manual(values = c("#00BFC4","#F8766D"))+
+  scale_x_date(name="Date", 
+               breaks=seq(f.start,f.end, length.out = 5), 
+               minor_breaks = "1 day") +
+  scale_y_continuous(breaks=seq(21443,21458,by=3))+
+  theme(plot.caption = element_text(hjust=0, size=18),
+        axis.text = element_text(size=16),
+        legend.position = "top",
+        legend.text = element_text(size=16),
+        legend.title = element_blank())
+
+#ggsave(filename = "f_viz.png", plot = f.viz, width = 15, height = 5.5)   
+
+
+#combining data sets on similar columns
+combined=as_tibble(data.frame(
+  country=c(rep("Korea", dim(korea2)[1]),
+            rep("India",dim(india2)[1]), 
+            florida2$country),
+  age=c(korea2$age,india2$age, florida2$age),
+  age.group=c(korea2$age.group, india2$age.group, florida2$age.group),
+  Age=c(korea2$Age,india2$Age, florida2$Age),
+  sex=c(korea2$sex, india2$gender, florida2$sex),
+  confirmed_date=c(korea2$confirmed_date, 
+                   india2$diagnosed_date, 
+                   florida2$confirmed_date),
+  s.time=c(korea2$s.time, india2$s.time, florida2$s.time),
+  end.state=c(korea2$end.state, india2$end.state, florida2$end.state),
+  end.status=as.numeric(c(as.character(korea2$end.status), 
+                          as.character(india2$end.status),
+                          as.character(florida2$died)))))
+
+
+#barplot for sex (Appendix figure 4)
+sex=ggplot(data=combined, aes(x=country, fill=sex)) + 
+  geom_bar(position="dodge") +
+  xlab("")+
+  facet_wrap(vars(country), scales="free")+
+  geom_text(stat='count', aes(label=..count..), 
+            vjust=-.1, position =position_dodge(width=.8))+
+  theme(plot.caption = element_text(hjust=0, size=12),
+        text = element_text(size=14),
+        legend.position = "right")
+#ggsave(filename = "sex.pdf", plot = sex, height = 5, width=10)  
+
+
+#cross tabulation tables for gender and end.state (Appendix tables 1-3)
+print(ctable(korea2$sex, korea2$end.state, justify = "c",
+             caption="Korea Sex by End Status"), method="pandoc")
+print(ctable(india2$gender, india2$end.state, justify = "c",
+             caption="India Sex by End Status"), method="pandoc")
+print(ctable(florida2$sex, florida2$end.state, justify = "c",
+             caption="Florida Sex by End Status"), method="pandoc")
+
+
+#barplot for agegroups (Appendix figure 5)
+age=ggplot(data=combined, aes(x=factor(age,levels = levels) ,fill=country)) + 
+  geom_bar(position="dodge") +
+  facet_wrap(vars(country), scales="free", ncol=1)+
+  labs(x="")+
+    theme(axis.text =element_text(size=16),
+        strip.text = element_text(size=16))+
+  guides(fill=FALSE)
+#ggsave(filename = "Age.png", plot = age, height=10, width=15) 
+
+
+#cross tabulation tables for end.state and age for each location
+#(Appendix tables 4-6)
+print(ctable(x=florida2$age, y=florida2$end.state, justify = "c",
+             caption="Florida Age by End Status"), method="pandoc")
+
+print(ctable(x = korea2$age, y=korea2$end.state, justify = "c",
+             caption="Korea Age by End Status"), method="pandoc")
+
+print(ctable(x=india2$age, y=india2$end.state, justify = "c",
+             caption="India Age by End Status"), method="pandoc")
+
+
+#barplot for confirmed cases per day(Appendix figure 6)
+case=ggplot(data=combined%>%group_by(country, confirmed_date))+
+  geom_bar(aes(x=confirmed_date, fill=country), show.legend = FALSE) +
+  facet_wrap(vars(country), ncol=1, scales="free_y")+
+  xlab("Date") + 
+  scale_x_date(breaks = seq(from=k.start, to=f.end, length.out=6)) +
+  theme(plot.caption = element_text(hjust=0, size=12),
+        strip.text.x = element_text(size=12),
+        axis.text.x = element_text(size=12),
+        axis.text.y=element_text(size=12))
+#ggsave(filename = "casesbydate.png", plot = case) 
+
+
+#barplot of the state of each patient at the end of the study
+#(Appendix figure 7)
+end=ggplot(data=combined, aes(x=end.state,fill=country))+
+  geom_bar(position="dodge", show.legend = FALSE) +
+  facet_wrap(vars(country), scales="free")+
+  geom_text(stat='count', aes(label=..count..), vjust=-.1, size=6,
+            position=position_dodge(width=.8)) +
+  xlab(" ")+
+  theme(strip.text.x = element_text(size=14),
+        text = element_text(size=18)) 
+#ggsave(filename = "endstate.png", plot = end, width=15) 
+
+
+#histograms for the observered survival time (Appendix figure 8)
+surv=ggplot(data=combined, aes(x=s.time, fill=country, )) + 
+  geom_histogram(binwidth = 1, boundary=1) + 
+  facet_wrap(vars(country), ncol=1, scales ="free") +
+  theme(axis.text = element_text(size=16),
+        strip.text = element_text(size=16))
+#ggsave(filename = "surv.png", surv, width=15, height=10)
+
+#summary statistic tables for s.time (Appendix table 7
+print(descr(x = korea2$s.time, transpose = TRUE, 
+            stats =c("n.valid", "mean","med", "sd"),
+            caption="South Korea Survival Time Statistics"), 
+      method = "pander")
+print(descr(x = india2$s.time, transpose = TRUE, 
+            stats = c("n.valid", "mean","med", "sd"),
+            caption="India Survival Time Statistics"), 
+      method = "pander")
+print(descr(x = florida2$s.time, transpose = TRUE, 
+            stats =c("n.valid", "mean","med", "sd"),
+            caption="Florida Survival Time Statistics"), 
+      method = "pander")
+
+################################
+################################
+## Survival analysis and code ##
+################################
+################################
+
+#Overall plots
+km=survfit(Surv(s.time, end.status)~1, data=combined)
+smooth.haz=muhaz(combined$s.time, combined$end.status, bw.smooth=20, b.cor="left", max.time = 35)
+
+haz=smooth.haz$haz.est
+cut=smooth.haz$est.grid
+h.surv=c(1,exp(-cumsum(haz[1:(length(haz)-1)]*diff(cut))))
+haz.df=data.frame(haz, cut,h.surv)
+
+#overall KM curve
+survplot=autoplot(km, ylim = c(.9,1), surv.colour="red") + 
+  labs(title = "Overall Survival Curve") +
+  xlab("Time(in days)")+
+  ylab("Survival Probability")+
+  geom_line(data=haz.df, aes(x=cut, y=h.surv), inherit.aes = FALSE)+
+  theme(plot.caption = element_text(hjust = 0, size=16),
+        axis.text = element_text(size=14),
+        axis.title = element_text(size=16))
+
+#Overall smooth hazard curve
+hazplot=ggplot(data=haz.df, aes(x=cut, y=haz))+ geom_line() +
+  labs(title="Overall Smoothed Hazard Function",
+       caption="Figure 1: Overall Survival and Hazard Curve") +
+  xlab("Time(in days)")+
+  ylab("Hazard Rate") +
+  theme(plot.caption = element_text(hjust = 0, size=20),
+        axis.text = element_text(size=14),
+    
+            axis.title = element_text(size=16))
+#Figure 1
+overall=ggarrange(survplot, hazplot, nrow =2) 
+#ggsave(filename = "overall.pdf", plot=overall,width = 10, height = 8)
+
+#########################################
+#Univariate analysis of country variable#
+#########################################
+
+#making a data frame for each location using the muhaz function
+smooth.haz.f=muhaz(florida2$s.time, florida2$died, bw.smooth=20, b.cor="left",
+                   max.time = 35)
+haz.f=smooth.haz.f$haz.est
+cut.f=smooth.haz.f$est.grid
+#based on muhaz hazard
+h.surv.f=c(1,exp(-cumsum(haz.f[1:(length(haz.f)-1)]*diff(cut.f))))
+
+smooth.haz.k=muhaz(korea2$s.time, korea2$end.status, bw.smooth=20, b.cor="left", max.time = 35,)
+haz.k=smooth.haz.k$haz.est
+cut.k=smooth.haz.k$est.grid
+#based on muhaz hazard
+h.surv.k=c(1,exp(-cumsum(haz.k[1:(length(haz.k)-1)]*diff(cut.k))))
+
+smooth.haz.i=muhaz(india2$s.time, india2$end.status, bw.smooth=20,
+                   b.cor="left", max.time = 35)
+haz.i=smooth.haz.i$haz.est
+cut.i=smooth.haz.i$est.grid
+#based on muhaz hazard
+
+h.surv.i=c(1,exp(-cumsum(haz.i[1:(length(haz.i)-1)]*diff(cut.i))))
+Loc=c("Florida", "Korea", "India")
+haz.df=data.frame(Country=rep(Loc, each=101),
+                  haz=c(haz.f, haz.k, haz.i),
+                  cut=c(cut.f, cut.k, cut.i),
+                  surv=c(h.surv.f, h.surv.k, h.surv.i))
+
+
+#survival curves for each country. Solid line is s. curve based on muhaz hazard
+km.curve=survfit(Surv(s.time, end.status)~country, data=combined)
+survplot.c=autoplot(km.curve)+ 
+  labs(title = "Survival Curves by Country")+
+  xlab("Time(in days)")+
+  ylab("Survival Probability") +
+  geom_line(data=haz.df, aes(x=cut, y=surv, color=Country), 
+            inherit.aes = FALSE)+
+  theme(text=element_text(size=12),
+        axis.text = element_text(size=14) ,
+        legend.text = element_text(size=14))
+
+
+#hazard curves for each country
+hazplot.c=ggplot(data=haz.df, aes(x=cut, y=haz, color=Country))+ 
+  geom_line()+
+  labs(title="Smoothed Hazard Curve by Country",
+       caption="Figure 2:  Survival and Hazard Curve by Country",
+       color="Country") +
+  xlab("Time(in days)")+
+  ylab("Hazard Rate") +
+  theme(text=element_text(size=12),
+        plot.caption = element_text(hjust = 0, size=20),
+        axis.text = element_text(size=14),
+        legend.text = element_text(size=14))
+
+#Figure 2
+overall=ggarrange(survplot.c, hazplot.c, nrow =2) 
+#ggsave(filename="countrySurv.pdf", plot=overall,width=10, height = 8)
+
+#stratified log rank and pairwise comparison (Appendix table 8 and 9)
+survdiff(Surv(s.time, end.status)~country+strata(age.group, sex),
+         data=combined)
+pw.country=pairwise_survdiff(Surv(s.time, end.status)~country, data=combined)
+
+
+#########################################
+#  Univariate analysis of sex variable  #
+#########################################
+male=combined[combined$sex=="male",]
+female=combined[combined$sex=="female",] 
+
+smooth.haz.M=muhaz(male$s.time, male$end.status, bw.smooth=20, b.cor="left",
+                   max.time=35)
+haz.M=smooth.haz.M$haz.est
+cut.M=smooth.haz.M$est.grid
+h.surv.M=c(1,exp(-cumsum(haz.M[1:(length(haz.M)-1)]*diff(cut.M))))
+
+smooth.haz.F=muhaz(female$s.time, female$end.status, bw.smooth=20,
+                   b.cor="left", max.time=35)
+haz.F=smooth.haz.F$haz.est
+cut.F=smooth.haz.F$est.grid
+h.surv.F=c(1,exp(-cumsum(haz.F[1:(length(haz.F)-1)]*diff(cut.F))))
+
+sex.df=data.frame(Sex=rep(c("male", "female"), each=101),
+                  haz=c(haz.M, haz.F),
+                  cut=c(cut.M, cut.F),
+                  h.surv=c(h.surv.M, h.surv.F))
+
+#survival curves for each Sex. Solid line is surv curve based on muhaz hazard
+km.curve=survfit(Surv(s.time, end.status)~sex, data=combined)
+survplot.sex=autoplot(km.curve)+ labs(title = "Survival Curves by Sex")+
+  xlab("Time(in days)")+
+  ylab("Survival Probability") +
+  geom_line(data=sex.df, aes(x=cut, y=h.surv, color=Sex), inherit.aes = FALSE)+
+  theme(text=element_text(size=16),
+        axis.text = element_text(size = 14),
+        axis.text.y = element_text(size = 14),
+        axis.text.x = element_text(size = 14),
+        legend.text = element_text(size=14))
+
+
+#hazard curves for each sex 
+hazplot.sex=ggplot(data=sex.df, aes(x=cut, y=haz, color=Sex))+ 
+  geom_line()+
+  labs(title="Overall Smoothed Hazard Function",
+       caption="Figure 3: Survival and Hazard Curves by Sex") +
+  xlab("Time(in days)") +
+  ylab("Hazard Rate") +
+  theme(text = element_text(size=16),
+        plot.caption = element_text(hjust = 0, size=20),
+        axis.text.x = element_text(size = 14),
+        axis.text.y = element_text(size = 14),
+        legend.text = element_text(size=14))
+
+#Figure 3
+overall.sex=ggarrange(survplot.sex, hazplot.sex, nrow =2) 
+#ggsave(filename = "sexSurv.pdf", plot=overall.sex, width = 10, height = 8)
+
+#stratified log rank test (Appedix table 10)
+survdiff(Surv(s.time, end.status)~sex+strata(age.group, country),
+         data=combined)
+
+
+#########################################
+#  Univariate analysis of age variable  #
+#########################################
+#making data frame for plotting s function based on hazard function
+age.df=data.frame(age=numeric(), haz=numeric(), cut=numeric(), surv=numeric())
+for(i in levels2[-1]){
+  dat=combined[combined$age.group==i,bw.smooth=20, b.cor="left", max.time=35]
+  smooths=muhaz(dat$s.time, dat$end.status)
+  haz=smooths$haz.est
+  cut=smooths$est.grid
+  surv=c(1,exp(-cumsum(haz[1:(length(haz)-1)]*diff(cut))))
+  #rows to add to age.df
+  newrows=data.frame(age=rep(i,101),haz , cut, surv)
+  age.df=rbind(age.df, newrows)}
+
+
+#survival curves for each Sex. Solid line is surv curve based on muhaz hazard
+km.curve=survfit(Surv(s.time, end.status)~factor(age.group, levels = levels2),
+                 data=combined)
+survplot.age=autoplot(km.curve)+ 
+  labs(title = "Survival Curves by Age")+
+  xlab("Time(in days)")+
+  ylab("Survival Probability") +
+  geom_line(data=age.df, aes(x=cut, y=surv, color=age), inherit.aes = FALSE)+
+  theme(text=element_text(size=12))
+
+
+#hazard curves for each sex
+hazplot.age=ggplot(data=age.df, aes(x=cut, y=haz, color=age))+ 
+  geom_line()+
+  labs(title="Smoothed Hazard Curve by Age",
+       caption="Figure 4: Survival and Hazard Curves by Age Category") +
+  xlab("Time(in days)") +
+  ylab("Hazard Rate") +
+  theme(text = element_text(size=12),
+        plot.caption = element_text(hjust = 0, size=18),
+        axis.text.y = element_text(size = 12),
+        axis.text.x = element_text(size = 12))
+
+#Figure 4
+overall.age=ggarrange(survplot.age, hazplot.age, nrow =2) 
+#ggsave(filename = "ageSurv.pdf", plot=overall.age, width = 8, height = 6 )
+
+#stratified log rank and pairwise comparison for age.group
+#(Appedix table 11 and 12)
+survdiff(Surv(s.time, end.status)~age.group+strata(sex, country),
+         data=combined)
+pw.agegroup=pairwise_survdiff(Surv(s.time, end.status)~age.group,
+                              data=combined)
+
+
+
+#which variables violate proportional hazards model
+#cox.zph tests the PH assumption (report Table 1)
+cox.zph(coxph(Surv(s.time, end.status)~age.group + sex + country,
+              data=combined))
+
+#plot of shoenfeld residuals(Appendix figure 9)
+plot(cox.zph(coxph(Surv(s.time, end.status)~age.group + sex + country, data=combined)))
+
+#Country violated PH assumption, stratify on country
+#now PH assumption reasonably met (Report Table 2)
+cox.zph(coxph(Surv(s.time, end.status)~age.group + sex + strata(country),
+              data=combined))
+
+
+#models for testing whether age.group is significant 
+mod.cox1=coxph(Surv(s.time, end.status)~age.group + sex + strata(country),
+               data=combined)
+summary(mod.cox1)#Report Table 3
+
+#in the model w/o interaction  age.group coefficients are not significant
+#Does age.group need to be in the model?
+mod.cox2=coxph(Surv(s.time, end.status)~ sex + strata(country), data=combined)
+
+#YES age.group should remain.(Appendix table 13)
+anova(mod.cox1, mod.cox2)
+
+
+#Consider age a continuous numeric variable
+mod.cox3=coxph(Surv(s.time, end.status)~Age+sex+strata(country), data=combined)
+cox.zph(mod.cox3)#PH assumption reasonable (Appendix table 14)
+
+
+#which stratified model is better? Numeric age or age.group
+AIC(mod.cox1, mod.cox3)#numeric age is better, mod.cox3
+
+
+###################################
+# how about an extended cox model #
+###################################
+#put data in counting process form
+covid=survSplit(combined, cut = combined$s.time[combined$end.status==1], 
+                end = "s.time", event = "end.status", id="id")
+
+
+#fitting the Model
+x.mat.Age=data.frame(model.matrix(~Age+sex+country+id+tstart+s.time+end.status,
+                                  data=covid))[,-1]
+
+mod.extF=coxph(Surv(tstart, s.time, end.status)~ 
+                Age + sexmale + countryIndia + countryKorea +
+                 countryIndia:s.time + countryKorea:s.time +
+                 sexmale:s.time+Age:s.time, 
+              data=x.mat.Age)
+sum.modF=summary(mod.extF) #Appendix table 15
+
+mod.ext=coxph(Surv(tstart, s.time, end.status)~ 
+                Age + sexmale + countryIndia + countryKorea +
+                countryIndia:s.time + countryKorea:s.time, 
+        data=x.mat.Age)
+sum.mod=summary(mod.ext) # Report table 5
+
+
+#Making report Figure 5
+coxext.df=data.frame(var=rownames(sum.mod$coefficients),
+                     high=sum.mod$conf.int[,4],
+                     low=sum.mod$conf.int[,3],
+                     est=sum.mod$conf.int[,1])
+
+
+extcox.HR=ggplot(coxext.df, aes(x=var)) +
+  geom_point(aes(y=high)) +
+  geom_point(aes(y=low)) +
+  geom_errorbar(aes(ymin=low, ymax=high), size=1)+
+  geom_point(aes(y=est), color="red", size=4) +
+  geom_hline(yintercept = 1, size=1) +
+  xlab("") + ylab("Hazard Ratio")+
+  scale_y_continuous(limits = c(0,4))+
+  coord_flip() +
+  theme(plot.caption = element_text(size=18, hjust = 0),
+        axis.text = element_text(size=18),
+        axis.title = element_text(size=18))
+#ggsave(filename = "extcoxHR.pdf", extcox.HR, width=10, height = 8)
