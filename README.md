@@ -15,4 +15,4 @@ This was independent project I completed in my free time. In the project, I scra
 
 ## PGA Tour Project
 
-This was another independent project where I attempted to predict the stroke average and winners on the PGA Tour for the 2019 season. I used regression and classification methods such as KNN, SVM, random forest, and logistic regression. This project was completed in Rstudio and used packages such as caret, tree, random forest and the tidyverse packages.
+This was another independent project where I attempted to predict the stroke average and winners on the PGA Tour for the 2019 season. I used regression and classification methods such as KNN, SVM, random forest, and logistic regression. This project was completed in Rmarkdown in Rstudio and used packages such as caret, tree, random forest and the tidyverse packages.
