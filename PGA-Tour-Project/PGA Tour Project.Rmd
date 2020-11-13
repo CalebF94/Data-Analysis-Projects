@@ -1,0 +1,534 @@
+---
+title: "PGA Tour Project"
+author: "Caleb Fornshell"
+date: "11/11/2020"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    df_print: paged 
+    code_folding: hide
+editor_options: 
+  chunk_output_type: inline
+---
+
+<style type="text/css">
+
+body, td {
+   font-size: 18px;
+}
+</style>
+
+```{r setup, include=FALSE, echo=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+require(tidyverse)# for graphing
+require(reshape2)# allows facet_wrap to plot multiple variables
+require(car)#vif function
+require(leaps)#selection methods
+require(knitr)
+require(caret)#knnreg()
+require(tree)
+require(randomForest)
+require(e1071)
+options(qwraps2_markup = "markdown")
+PGAdata=read_csv(
+  "C:\\Users\\Caleb\\Desktop\\jobs\\Projects\\PGA Tour\\PGA_cleaned.csv")
+
+
+#Separating data into test and training sets for later analysis
+pred=PGAdata[,4:15]
+predStAvg=PGAdata[,c(4:15, 17)]
+predWinners=PGAdata[,c(4:15, 16)]
+
+train.pred=PGAdata[PGAdata$Year!=2019, 3:15]
+train.StAvg=PGAdata[PGAdata$Year!=2019, c(3,17)]
+train.Winners=PGAdata[PGAdata$Year!=2019, c(3,16)]
+
+
+test.pred=PGAdata[PGAdata$Year==2019, 3:15]
+test.StAvg=PGAdata[PGAdata$Year==2019, c(3,17)]
+test.Winners=PGAdata[PGAdata$Year==2019, c(3,16)]
+
+```
+
+  
+<p>&nbsp;</p>
+
+  
+## *Introduction*
+*****
+The emergence of data analytics has impacted the way sports are played across
+the world, and the PGA tour is no different. Over the last few years data has 
+greatly impacted the way golfers play and how they are compared to one another. 
+The goal of this project is to gain an understanding of which variables of a 
+golfers performance are most important to determine whether a golfer will shoot 
+low and win a tournament.
+
+  
+<p>&nbsp;</p>    
+## *Gathering and Cleaning the Data*
+*****
+The player performance data for this project was scraped from the official
+website of the PGA Tour, and the information on tournament winners is from 
+Wikipedia. Both sources were scraped using Power Querey. The variables used were
+chosen based on my knowledge and interest of golf. In total, 14 variables were 
+scraped from the PGA tour website and one from Wikipedia. One variable contained
+playerand year combined. These were split into two separate variables, which 
+resulted in the variables used in this analysis. A full description of each 
+variable can be found [here,](https://tinyurl.com/y4wljbxy) and the structure 
+of data set is below.
+```{r}
+str(PGAdata)
+```
+
+This project uses two response variables, `StrokeAverage` and `Winner`, and
+twelve predictor variables which conceptually fall into one of 
+three groups:
+
+* Off the Tee Statistics
+  + `AvgClubheadSpeed`, `AvgBallSpeed`, `LaunchAngle`, `SpinRateOTT`
+* Shots Into the Green
+  + `AvgApproachGT100`, `AvgApproachLT100`, `ProxToHoleARG`, `SandSave`
+* Putting
+  + `PuttGT20Made`, `Putt15_20Made`, `Putt10_15Made`, `PuttLT10Made`
+  
+  
+<p>&nbsp;</p>    
+## *Exploratory Data Analysis*
+******
+To begin, the numer of golfers from each year is determined. The barplot shows
+there were around 180-190 golfers from each season.
+```{r, message=FALSE, fig.height=3, fig.align="center"}
+#Number of qualified golfers each season
+ggplot(data=PGAdata, aes(x=Year)) + 
+  geom_bar() +
+  geom_text(stat='count', 
+            aes(label=..count..), 
+            vjust=-.1, 
+            position =position_dodge(width=.8)) +
+  ylab("Number of Golfers")+
+  labs(title = "Qualified Golfers Each Year")
+```
+
+
+Next, the distributions of the numeric variables were plotted and displayed. The
+histograms and summary statistics table show that these variables are symmetric
+and appear uni-modal. There are not any eye-catching anomalies that need to 
+be addressed at this time.
+
+:::: {style="display: grid; grid-template-columns: 1fr 1fr; 
+grid-column-gap: 10px; "}
+
+::: {}
+```{r, message=FALSE, fig.height=7}
+# density and histogram of all predictor variables OTT
+ggplot(data=melt(predStAvg), aes(x=value))+
+  geom_density(color="black") + 
+  geom_histogram(aes(y = ..density..), bins=20 )+
+  facet_wrap(~variable,scales = "free", ncol = 3)+
+  labs(title = "Density Plots For All Predictor Variables") +
+  theme(strip.text = element_text(size = 14))
+  
+```
+:::
+
+:::{}
+
+```{r, message=FALSE}
+#summary statistics table
+SummaryStats= tibble(Variable=names(predStAvg),
+                     Units=c("Ft","Ft","MPH","MPH","Degrees","Ft",
+                           "Perc","Perc","Perc","Perc","Perc","RPM","Strokes"),
+                     Mean=round(apply(predStAvg,2,mean),2),
+                     Median=round(apply(predStAvg,2,median),2),
+                     Std.Dev=round(apply(predStAvg,2,sd),2),
+                     Min=round(apply(predStAvg,2,min),2),
+                     Max=round(apply(predStAvg,2,max),2))
+
+#knitr::kable(SummaryStats,digits = 2)
+
+SummaryStats
+
+
+```
+:::
+::::
+
+
+It is also important to understand the relationship between the predictor
+variables. The correlation plot below shows the linear relationship between all
+predictors. One pair of variables that has a very large positive correlation is 
+`AvgClubheadSpeed` and `AvgBallSpeed`. This relationship, intuitivaley, is not 
+surprising. There are also some negative correlations that are relatively high 
+as well. These pair of variables will need to be considered in future analyses.
+
+
+
+```{r, fig.height=4, fig.width=8, fig.align="center"}
+ggcorrplot::ggcorrplot(cor(pred), method = "square", type = "upper", ggtheme = "minimal") +
+  theme(axis.text.x=element_text(angle=35))
+```
+
+The EDA demonstrated that the data is complete and is not missing any values
+as the PGA kept thorough records for the seasons examined. Thus, there should be
+very issues in future analyses.
+
+
+
+
+<p>&nbsp;</p>    
+## *Predicting Stroke Average* 
+*****
+In the following section machine learning models will be used to predict a 
+player's stroke average based on the predictor variables described previously.
+A few different models such as K-nearest neighbors, regression trees, and random
+forests will be used. In an attempt to compare different models, the data will 
+be split into training and test sets. The training data will be all observations
+from the seasons 2015-2018 and the test dataset will consist of observations 
+from 2019.
+
+```{r, echo=TRUE}
+train = PGAdata[PGAdata$Year!=2019 , c(4:15,17)]
+test = PGAdata[PGAdata$Year==2019 , c(4:15,17)]
+```
+In total ther are `r dim(train)[1]` observations in the training set and 
+`r dim(test)[1]` observations in the test set.
+
+### K-Nearest Neighbors
+The first method used will the non-parametric method K-nearest neigbors(KNN). 
+The package `caret` contains the `knnreg()`function implemented here. In these 
+models the critical parameter is K, the number of neighbors. The chosen K will
+be the valuethat minimizes the MSE of the test data. The results of the model 
+are shown in the graph below.
+
+```{r, message=FALSE, warning=FALSE}
+
+#vector to store results
+mse.vector = numeric(100)
+
+#Will loop through all values of K and store the MSE. We want min(MSE)
+for(i in 1:100){
+  
+knn.mod = knnreg(StrokeAverage~., data=train, k=i)#generating model with train
+knn.test = predict(object = knn.mod, test)#getting predictions for test
+MSE=mean((test$StrokeAverage - knn.test)^2)#calculating Test MSE
+
+mse.vector[i]=MSE
+
+}
+
+#getting best K and MSE
+bestk=which(mse.vector==min(mse.vector))
+bestMSE.knn = min(mse.vector)
+
+#Plot showing trend of test MSEs
+plot(x=1:100, y=mse.vector, type = "l", xlab = "K", ylab = "MSE")
+title("KNN Mean Square Errors: Test Set")
+text(x=50, y=10,paste("Best: K=", bestk, "\nMin MSE=", round(bestMSE.knn,2)))
+points(x=bestk, y=min(mse.vector), col="red", pch=19)
+
+```
+
+
+
+### Tree Based Methods 
+Regression trees are another non-parametric method. A simple regression tree and
+a random forrest will be implemented using the `tree` and `randomForest`
+packages. 
+
+#### *Regression Tree*
+First, a simple tree. I will fit a simple tree model. Because there
+are a relatively large number of predictors, the tree will be "trimmed" using 
+cross validation in the `prune.tree()` and `cv.tree()` functions and choosing
+the tree with 10 "leaves" minimizes the MSE on the test set.
+
+```{r, fig.width=12, fig.height=10}
+
+set.seed(123)
+
+##unpruned tree
+unpruned.tree = tree(StrokeAverage~., data = train)
+unpruned.pred = predict(unpruned.tree, test)
+#MSE from the test set
+unpruned.MSE = mean((unpruned.pred - test$StrokeAverage)^2)
+
+
+# Pruned Tree chosen by Cross Validation
+tree.cv = cv.tree(unpruned.tree, FUN = prune.tree)
+#what is the optimal number of leaves
+best.size = tree.cv$size[which(tree.cv$dev == min(tree.cv$dev))]#10
+pruned.tree = prune.tree(unpruned.tree, best = best.size)
+pruned.pred = predict(pruned.tree, test)
+pruned.MSE = mean((pruned.pred - test$StrokeAverage)^2)
+
+#plotting the Trees
+par(mfrow=c(2,1))
+plot(unpruned.tree)
+title(paste("Unpruned Tree:\n MSE=", round(unpruned.MSE,2)))
+text(unpruned.tree, pretty=0)
+
+plot(pruned.tree)
+title(paste("Pruned Tree:\n MSE=", round(pruned.MSE,2)))
+text(pruned.tree, pretty=0)
+
+```
+
+#### *Random Forest*
+Random forests are an improvement over a simple tree because it produces many
+uncorrelated trees which results in a smaller variance. It also restricts the
+variables that are available at each break in the tree, so it considers the 
+effects of all variables even if they are correlated with best single predictor.
+
+```{r, fig.width=12}
+
+set.seed(123)
+forest.mse = numeric(12)
+
+#finding tree that minimizes OOB error(MSE)
+for(m in 1:12){
+  
+  #mtry = # of variables randomly selected at each break
+  #trying to find best mtry
+mod.forest = randomForest(StrokeAverage~., data=train, mtry=m)
+forest.pred = predict(mod.forest, test)
+
+forest.mse[m]=mean((forest.pred-test$StrokeAverage)^2)
+  
+}
+
+best=which(forest.mse == min(forest.mse))
+
+par(mfrow=c(1, 2))
+plot(x=1:12, y=forest.mse,type="b",
+     xlab = "Number of Variables", ylab = "OOB Error")
+title(main = "OOB Error Vs # of Variables At Each Split")
+text(paste("Best model uses", 4, "variables at each split\n", 
+           "OOB Error=", round(min(forest.mse),4)), x=6, y=.294)
+points(x=best, y=min(forest.mse), pch=19, col="red")
+
+varImpPlot(randomForest(StrokeAverage~., data=train, mtry=best),
+           main = "Variable Importance Plot")
+
+
+```
+
+Another important feature with using tree based methods is it allows us to make
+a statement about which variables are most significant. The pruned and unpruned
+tree and the variable importance plot all have `AvgBallSpeed` as the upper
+most variable, so we can safely say that a higher `AvgBallSpeed` is an important
+factor in predicting `StrokeAverage`. All methods also have `PuttLT10Made` as 
+the next highest variable, typically followed by some type of shot to the green. 
+
+### Comparison of Methods
+The tables below show a comparison of the methods used above. Random forest was
+by far the best method based on minimizing the MSE. KNN, unpruned, and pruned 
+regression trees all performed substantially worse. The bottom table compares 
+the 2019 golfers' stroke averages to those predicted by the forest table.
+
+
+```{r}
+tibble(Method = c("K-Nearest Neighbors", "Unpruned Regression Tree",
+                  "Pruned Regression Tree", "Random Forest"),
+       ImportantParameter = c("K", rep("Terminal Nodes",2), "mtry"),
+       BestMSE = c(round(bestMSE.knn,2),round(unpruned.MSE,2),
+                   round(pruned.MSE,2), round(min(forest.mse),4)))
+
+```
+
+
+```{r}
+
+SummTable=cbind(PGAdata %>% 
+             select(Year, Golfer, StrokeAverage) %>% 
+             filter(Year==2019), Predicted=round(forest.pred, 3)) %>%
+  mutate(Error=abs(StrokeAverage - Predicted)) %>%
+  arrange(Error)
+
+SummTable
+```
+
+<p>&nbsp;</p>    
+## *Predicting Winners* 
+*****
+In professional sports, winning is everything. Based on the years 2015-2018, 
+models to predict winners on the PGA tour can be constructed. The models 
+constructed below won't be used to predict winners of individual tournaments, 
+but instead will classify a player based on if he should or shouldn't have won a
+tournament in a particular year(predicting the value of variable `Winner`) based
+on the predictor variables used earlier and `StrokeAverage`. Three different
+models will be constructed and their accuracy examined.
+
+### Logistic Regression
+A logistic model will be used to determine the probability a golfer should
+have at least one victory in a year using the `glm()` function. The results of 
+fitting a logistic model show that only some variables appear significant, so a 
+simpler model using only those significant variables was also constructed. 
+```{r}
+#setting up training and testing set
+train = PGAdata[PGAdata$Year!=2019 , c(4:15,17,16)]
+test = PGAdata[PGAdata$Year==2019 , c(4:15,17,16)]
+train$Winner=as.factor(train$Winner)
+test$Winner=as.factor(test$Winner)
+```
+
+```{r}
+log.full = glm(Winner~., data=train, family="binomial")
+summary(log.full)
+
+log.simple = glm(Winner~AvgApproachGT100 + StrokeAverage + AvgClubheadSpeed +
+                   AvgBallSpeed + ProxToHoleARG, data=train,
+                 family="binomial")
+summary(log.simple)
+```
+
+The values of the coefficents demonstrate the most influential varibles appear 
+to be similar to those found in the prediction of stroke average along with 
+`StrokeAvgerage` itself. Probabilities of winning during the 2019 season, along
+with their confusion matrix are calculated below for both models. A golfer was
+predicted to have won if he had a probability greater than 0.40.
+
+:::: {style="display: grid; grid-template-columns: 1fr 1fr; 
+grid-column-gap: 10px; "}
+
+::: {}
+```{r}
+
+#probabilities
+full.pred = predict(log.full, test, type="response")
+simple.pred = predict(log.simple, test, type="response")
+
+full.win = (full.pred >= .4)
+simple.win = (simple.pred >= .4)
+
+
+#Confusion Matrices on test data
+table(`Full Pred Win` = full.win + 1, `Actual Win` = as.numeric(test$Winner))
+CCR.logF=round(mean(full.win +1 ==as.numeric(test$Winner))*100,2)
+```
+:::
+:::{}
+
+```{r}
+
+table(`Simple Pred Win` = simple.win+ 1, `Actual Win` = as.numeric(test$Winner))
+CCR.logR= round(mean(simple.win +1 ==as.numeric(test$Winner))*100,2)
+```
+:::
+::::
+
+### Support Vector Machine
+A support vector machine classifier was implemented using the `svm()` function 
+from the `e1071` package. The confusion matrix of the best model is shown below.
+```{r}
+
+svmfit = svm(Winner~., data=train, kernel="radial", gamma=1, cost=1000)
+
+#uses CV to select best model
+tuned.svm = tune(svm, Winner~., data=train,
+                kernel="radial", probability=TRUE,
+                ranges=list(cost=c(.1,1,10,100),
+                            gamma=c(.5,1,2,3)))
+
+#predictions
+svm.pred = predict(tuned.svm$best.model, test, probability = TRUE)
+svm.win = attr(svm.pred, "p")[,1] >.4
+
+CCR.svm = round(mean(svm.win +1 ==as.numeric(test$Winner))*100,2)
+table(`Predicted Win` = svm.win + 1, `Actual Win` = as.numeric(test$Winner))
+```
+
+
+### Random Forest Classification 
+A random forest was also fit. The most accurate model selected considered ten
+variables at each branch and had the following variable importance plot.
+```{r fig.width=10}
+set.seed(123)
+forest.err = numeric(13)
+
+#finding tree that minimizes OOB error(MSE)
+for(m in 1:13){
+  
+  #mtry = # of variables randomly selected at each break
+  #trying to find best mtry
+mod.forest = randomForest(Winner~., data=train, mtry=m)
+forest.pred = predict(mod.forest, test)
+
+forest.err[m]=mod.forest$confusion[2,3]
+  
+}
+
+best=min(which(forest.err == min(forest.err)))
+
+par(mfrow=c(1, 2))
+plot(x=1:13, y=forest.err,type="b",
+     xlab = "Number of Variables", ylab = "Classification Error")
+title(main = "Classification Error Vs # of Variables At Each Split")
+text(paste("Best model uses", 4, "variables at each split\n", 
+           "OOB Error=", round(min(forest.err),4)), x=6, y=.294)
+points(x=best, y=min(forest.err), pch=19, col="red")
+
+varImpPlot(randomForest(Winner~., data=train, mtry=best),
+           main = "Variable Importance Plot")
+
+```
+
+```{r}
+best.forest=randomForest(Winner~., data=train)
+
+forest.pred = predict(best.forest, test, cutoff = c(.6,.40))
+
+table(`Predicted Win` = forest.pred, `Actual Win`=test$Winner)
+CCR.for = round(mean(forest.pred == test$Winner)*100,2)
+```
+The random forest classification shows that the most important variable is 
+stroke average. This agrees with the summary table from the logistic regression 
+models.
+
+
+### Comparison of Methods {.tabset}
+The comparison of correct classification rates shows that the accuracy for all 
+models is around 80-85%. All models underestimated the number of golfers that 
+win a tournament. The models were good at selecting the top ranked golfers in 
+the world as demonstrated by the fact that golfers such as Brooks Koepka, Rory
+McIlroy, and Xander Schauffele were predicted by multiple models.
+
+#### Classification Rates
+
+```{r}
+
+tibble(
+  Method = c("Full Log. Regr.", "Reduced Log. Regr.", "SVM", "Random Forest"),
+  `Correct Classification Rate` = c(CCR.logF, CCR.logR, CCR.svm, CCR.for))
+```
+
+#### Predictions Vs. Observed
+
+```{r}
+summaryTab=cbind( PGAdata%>%filter(Year==2019)%>%select(Golfer, Winner) ,
+       `Full Log.` = full.win*1,
+       `Red. Log.` = simple.win*1,
+       `SVM` = svm.win*1,
+       `Rand. Forest` = as.numeric(forest.pred)-1)
+
+summaryTab %>% arrange(desc(Winner))
+```
+
+
+<p>&nbsp;</p>
+
+  
+## *Further Research*
+*****
+
+In the future, other variables should also be studied to determine what are the
+best predictors of both `StrokeAverage` and `Winner`. The PGA website has a wide
+range of statistics and numerous possibilites exist to find the best 
+combination. The prediction of `StrokeAverage` could probably be improved by 
+incorporating more iron play statistics rather than just `AvgApproachGT100`, but
+overall the models were able to predict most golfer's average to within a stroke
+and a half. The prediction of `Winner` was dominated by `StrokeAverage`. Perhaps
+determining better secondary predictors would increase accuracy. The models 
+could also be improved by finding the optimal hurdle in deciding whether to 
+predict the golfer as a winner because, in general the models predicted too 
+few winners.
