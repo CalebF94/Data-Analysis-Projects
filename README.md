@@ -12,3 +12,7 @@ This was class project I completed in my survival analysis course. In the projec
 ## MLB Salaries Project
 
 This was independent project I completed in my free time. In the project, I scraped data from the internet and created a Shiny web app that can be used to compare salaries of MLB teams and players between the years of 1985 and 2016. The interactive app has numerous graphics and is user friendly. This project was completed in R and used packages such as Shiny, ggplot2, dplyr, and htmlab. The app can be accessed at the following link: [https://caleb94.shinyapps.io/MLBSalaries/](https://caleb94.shinyapps.io/MLBSalaries/)
+
+## PGA Tour Project
+
+This was another independent project where I attempted to predict the stroke average and winners on the PGA Tour for the 2019 season. I used regression and classification methods such as KNN, SVM, random forest, and logistic regression. This project was completed in Rstudio and used packages such as caret, tree, random forest and the tidyverse packages.
