@@ -12,6 +12,17 @@ editor_options:
   chunk_output_type: inline
 ---
 
+<!--
+Author: Caleb F
+Date: 11/2020
+
+Description: Code for generating the html document PGA-Tour-Project.html.
+Player data was scraped from the PGA website and the tournament winner data
+is from wikipedia. In the future I plan to use simialar data to perform a 
+classification problem.
+-->
+
+
 <style type="text/css">
 
 body, td {
@@ -32,8 +43,7 @@ require(tree)
 require(randomForest)
 require(e1071)
 options(qwraps2_markup = "markdown")
-PGAdata=read_csv(
-  "C:\\Users\\Caleb\\Desktop\\jobs\\Projects\\PGA Tour\\PGA_cleaned.csv")
+PGAdata=read_csv("PGA_cleaned.csv")
 
 
 #Separating data into test and training sets for later analysis
