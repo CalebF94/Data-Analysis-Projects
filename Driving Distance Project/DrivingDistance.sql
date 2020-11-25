@@ -1,3 +1,11 @@
+#######################################################################################
+#										      #
+# SQL script used in Driving Distance Project.					      #
+# Uploading CSVs into a database and merging tables to create one master data file    #
+# mySQL database								      #
+#										      #
+#######################################################################################
+
 CREATE database PGA;
 
 USE PGA;
@@ -186,6 +194,9 @@ ENCLOSED BY '"'
 IGNORE 1 ROWS;
 
 
+##################################################################
+## Table used in final analysis. Will be exported after running ##
+##################################################################
 SELECT dd.PlayerYear, ah.Year, ah.Player, dd.Rounds, DrivingDistance, dd.Attempts, 
 	   ApexHeight, AhAttempts, ApexDistance, ADAttempts, BallSpeed, BSAttempts,CarryDistance, CDAttempts, ClubheadSpeed, CSAttempts, 
        HangTime, HTAttempts, LaunchAngle, LAAttempts, SpinRate, SRAttempts
