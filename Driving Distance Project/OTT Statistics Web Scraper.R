@@ -50,6 +50,7 @@ pga_scraper=function(stat, year1, year2, statLab="StatAvg"){
          ) %>%
          unite(col = "PlayerYear", c(2,1),remove = FALSE,sep = "") %>%
          mutate(PlayerYear=str_replace_all(`PlayerYear`,pattern = " ",""))%>%
+        #Two Richards Johnson, so I removed them. Caused issued with unique identifyer.
          filter(`PLAYER NAME`!="Richard Johnson")
          
        
