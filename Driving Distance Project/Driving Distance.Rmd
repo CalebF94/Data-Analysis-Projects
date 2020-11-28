@@ -1,0 +1,652 @@
+---
+title: "Driving Distance Project"
+output: 
+  html_document:
+    theme: cosmo
+    code_folding: "hide"
+    df_print: paged
+    toc: TRUE
+    toc_depth: "1"
+---
+
+<!-- 
+This file creates the the html document for my Driving Distance Project.
+The data for this project can be found in the driving_master.csv file.
+
+Objective of the project is to determine whether driving distance has seen a 
+statistically significant increase in driving distance and what caused the 
+change if seen.
+-->
+
+
+<!-- increasing text size for whole document -->
+<style type="text/css">
+
+body, td {
+   font-size: 18px;
+}
+</style>
+
+<!-- Styling for blue banner -->
+<style>
+div.blue { background-color:#008af4; 
+           border-radius: 5px; 
+           padding: 10px;
+           color: white;
+           }
+</style>
+
+<!-- Styling for gray box around tables and graphs -->
+<style>
+div.back { background-color: white;
+  border: 3px solid lightgray;
+  padding: 3px;
+  margin: 20px;
+           }
+</style>
+
+
+<!-- Installing packages and reading in data -->
+```{r setup, include=FALSE}
+require(tidyverse)
+require(reshape2) #melt() function
+require(plotly) #interactive graphics
+require(DT) #datatables
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, fig.align = "center")
+infile="C:\\Users\\Caleb\\Desktop\\jobs\\Projects\\Driving Distance\\data\\Driving_Master.csv"
+
+
+Drive = read.csv(infile, header = TRUE, encoding = "UTF-8")
+```
+
+<div  class="blue">
+# Introduction
+</div>
+
+
+The purpose of this study is to analyze tee shots on the PGA tour, and discuss 
+how these shots have distances have changed during the 2007-2019 seasons. 
+Some of the research questions examined in this analyse include:
+
+  + Has Driving Distance increased and by how much?
+  + What variables are correlated with increased distance?
+  + Are other correlations noteworthy?
+  + Has the amount of roll changed over time?
+  
+Other than `DrivingDistance`, the variables discussed in this study are based on the 'Off the Tee' statistics
+that are captured using radar as described by the PGA Tour's [website](https://www.pgatour.com/stats/categories.ROTT_INQ.html). The data was scraped from the PGA Tour's website using a web scraper that created a table
+for each statistic. These tables were then loaded into a mySQL database and 
+joined to create a single table. This merged table was used in the analysis 
+below. Links to the web scraper and SQL script are found [here](https://github.com/CalebF94/Data-Analysis-Projects/tree/main/Driving%20Distance%20Project). 
+
+A note on notation: A variable's name is `highlighted` if the reference is 
+specific to a column in the data set.
+
+<br>
+<div  class="blue">
+# Exploratory Data Analysis
+</div>
+
+## *Structure of the Data* {.tabset .tabset-pills}
+
+******
+
+The data contains 22 variables,of which 9 are statisitics of interest and 9 are 'Attempt' variables indicating the number of measurements that were taken for a particular statistic. The dataset contains 2437 observations and 540 unique 
+golfers. Each row represents a single season for a particular golfer. The data 
+also contains no missing information. The dataset(with 'Attempt' variables 
+removed) is shown below.
+
+
+
+### Data
+<div  class="back">
+```{r}
+#using DT package to print only numeric variable columns
+datatable(Drive[,c(2:4,seq(5,21,2))], 
+          options = list(scrollX=TRUE,
+                         pageLength=8))
+
+```
+</div>
+
+### Observations
+<div  class="back">
+```{r}
+obs = dim(Drive)[1]
+vars =  dim(Drive)[2]
+
+#First and last year
+y1 = min(Drive$Year)
+y2 = max(Drive$Year)
+
+#giving basic counts for dataset
+tibble("Number of Obs" = obs,
+       "Number of Vars" = vars,
+       "Unique Golfers" = length(unique(Drive$Player)))
+```
+</div>
+
+### Missing Data
+<div  class="back">
+```{r}
+#determing which variables, if any, have missing values
+apply(apply(Drive, 2, is.na), 2, sum)#no missing values
+```
+</div>
+
+## {-}
+
+
+
+## *Descriptive Statistics* {.tabset .tabset-pills}
+
+********
+
+
+The following tabs contain basic counts and descriptive statistics for all
+variables. The "Year" tab shows that on average 187 golfers participated each year,
+and that the number of golfers each season ranged from 177-195. The "Table"
+tab contains the sample mean, median, standard deviation, minimum and maximum
+for each variable along with the units of measurement.
+
+
+### Year 
+<div  class="back">
+```{r  fig.height=3}
+# golfers in each year
+# table(Drive$Year)
+ggplot(data=Drive, aes(x=as.factor(Year))) + 
+  geom_bar() +
+  coord_flip()+
+  geom_text(stat='count', aes(label=..count..), 
+            hjust=-.1, position =position_dodge(width=.8)) +
+  xlab("Year") +
+  labs(title = "PGA Golfers by Year", 
+       subtitle = paste("Average: ", round(obs/length(unique(Drive$Year)))))+
+  theme(axis.ticks.x = element_blank(),
+        axis.title.x = element_blank(),
+        axis.text.x  = element_blank())
+
+
+```
+</div>
+
+### Table
+<div  class="back">
+```{r}
+
+#selecting only numeric columns, and getting unit labels
+numericvars=Drive %>% select(seq(5,21,2))
+label=c("Yds", "Ft", "Yds", "MPH", "Yds", "MPH", "Sec", "Deg", "RPM")
+
+#creating descriptive statistics table
+Descr.Table = 
+    tibble(Variable = paste(names(numericvars), " (", label, ")", sep=""),
+           Count = apply(numericvars,2 , length),
+           Average = round(apply(numericvars, 2, mean),2),
+           Median = apply(numericvars, 2, median),
+           Std.Dev = apply(numericvars, 2, sd),
+           Minimum = apply(numericvars, 2, min),
+           Maximum = apply(numericvars, 2, max))
+
+Descr.Table
+```
+</div>
+## {-}
+
+## *Distribution of Variables* {.tabset .tabset-pills}
+
+*******
+
+The distribution of each variable is shown using histograms, density plots, and
+boxplots in the following tabs. These graphs show that the variables are 
+symmetric and there doesn't appear to be any obvious major issues. The boxplots
+do show that there are a few outliers for each variable, but that is not unusual
+for the number of observations being studied.
+
+### Density Plots
+<div  class="back">
+```{r message=FALSE, fig.align='center'}
+# Distribution of numeric variables
+ggplot(data = melt(Drive %>% select(5,7,9,11,13,15,17,19))) +
+  geom_histogram(aes(x=value, y=..density..), bins = 20) +
+  geom_density(aes(x=value, color = variable), size=1.2) +
+  facet_wrap(~variable, scales = "free", ncol = 4) +
+  guides(color=FALSE) +
+  labs(title = "Histograms and Density Plots of Numeric Variables")
+```
+</div>
+
+### Boxplots 
+<div  class="back">
+```{r fig.align='center'}
+
+# boxplots for each numeric variable
+ggplot(data = melt(Drive %>% select(3,5,7,9,11,13,15,17,19,21), id.vars = 1)) +
+  geom_boxplot(aes(x=value, y=variable, color=variable)) +
+  theme(axis.text.y = element_blank(),
+        axis.line.y = element_blank()) +
+  ylab("") + xlab("") +
+  facet_wrap(~variable, scales = "free", ncol = 3) +
+  guides(color=FALSE) +
+  labs(title = "Boxplots of Numeric Variables")
+
+```
+</div>
+## {-}
+
+## *Relationships Between Variables* {.tabset .tabset-pills}
+
+*******
+
+In order to determine which variables may be responsible for the possible increase
+in driving distance, the correlation between variables is needed. The graphs
+below illustrate which variables are most correlated. The most interesting 
+relationships are shown and discussed further.
+
+### Correlation Matrix
+
+> I'm most interested in the `DrivingDistance` variable and it appears that
+> `BallSpeed` and `CarryDistance` are the most highly correlated variables, which
+> makes intuitive sense. `ClubheadSpeed` and `ApexDistance` also have very high
+> correlations. Other notable correlations exist between `LaunchAngle` and 
+>`ClubheadSpeed` and `BallSpeed`.
+
+<div  class="back">
+```{r}
+# correlation matrix
+corrplot::corrplot(cor(numericvars), method = "number", type = "lower",
+                   addCoef.col = FALSE, tl.srt = 15, diag = FALSE)
+
+```
+</div>
+
+### Driving Distance Scatterplots
+
+> These relationships all make sense intuitively, and are really not at all 
+> surprising. If modeling driving distance was a goal, the high correlation
+> between these variables would need to be accounted for.
+
+<div  class="back">
+```{r}
+# scatter plots with variables highly correlated to DrivingDistance
+# Vars: Apex dist, ballspeed, carrydist, CHspeed
+melt(Drive %>% select(5,9,11,13,15), id.vars = 1) %>%
+ggplot(aes(x = DrivingDistance, y = value)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  facet_wrap(~variable, scales = "free", strip.position = "left") +
+  ylab("") +
+  labs(title = "Driving Distance Vs Highly Correlated Variables")
+```
+</div>
+
+### Launch Angle Scatterplots
+
+> I also found these correlations interesting as they were the only significant
+> negative correlations, and there does not seem to be an intuitive reason why
+> these correlations are negative.
+
+<div  class="back">
+```{r}
+# Scatterplots for strong negative correlations
+# strong negative correlations associated with Launch Angle
+# Vars LaunchAngle, CHSpeed, BallSpeed, SpinRate
+melt(Drive %>% select(19, 15, 11, 21), id.vars = 1) %>%
+ggplot(aes(x=LaunchAngle, y=value)) +
+  geom_point() +
+  facet_wrap(~variable, scales = "free", strip.position = "left", ncol = 2) +
+  geom_smooth(method = "lm") +
+  ylab("") +
+  labs(title = "Launch Angle Vs Negative Correlated Variables")
+```
+</div>
+## {-}
+
+
+<br>
+<div  class="blue">
+# Is Driving Distance Increasing? 
+</div>
+
+## *Trends Over Time*
+
+*********
+
+The plot below shows how the distributions of each variable have changed over 
+time. Most variables appear to have increasing trendlines, including all 
+distance related variables. This seems to suggest that driving distance has 
+indeed increased over the last 13 years. Later, a statistical test will be used 
+to determine whether the increase is significant. Three variables, `HangTime`, `LaunchAngle`, and `SpinRate`, appear either be non-increasing or possibly
+decreasing.
+
+<div  class="back">
+```{r fig.width=8}
+# change of all variables over time
+#LA and spin rate decrease
+melt(Drive %>% select(1, 2,5,7,9,11,13,15,17,19,21), 
+     id.vars = c("Year","PlayerYear")) %>%
+ggplot(aes(x=as.factor(Year), y=value, label=PlayerYear)) +
+  geom_boxplot() +
+  geom_smooth(aes(group=1), method="lm") + 
+  theme(axis.text.x = element_text(angle = 90))+
+  facet_wrap(~variable, scales = "free_y", ncol=3, strip.position = "left") +
+  ylab("") + xlab("") + 
+  labs(title = "Variable Trends Over Time")
+ 
+
+```
+</div>
+<br>
+
+### *Is The Increase Significant?*{.tabset .tabset-pills}
+
+********
+
+To determine whether the average driving distance is increasing a simple linear
+regression model is created with year as the predictor variable. The mean 
+driving distance for each season was calculated using the driving distance 
+weighted by the driving attempt variable. 
+
+The results of the regression analysis show that the increase is significant as 
+the p-value < 0.05. This model states that for every year after 2007, average 
+driving distance increases on average by approximately 0.59 yards.
+
+#### Graph
+<div  class="back">
+```{r}
+# is average drive distance increasing over time?
+
+# subsetting and aggregating data for Driving Distance
+DD = 
+  Drive %>%
+  transmute(
+    Year,
+    Attempts,
+    totaldistance = DrivingDistance*Attempts) %>% 
+  group_by(Year) %>%
+  summarize(AvgDrive=sum(totaldistance)/sum(Attempts))
+
+
+#generates ANOVA table
+m=summary(lm(AvgDrive~Year, DD))
+ 
+#creating text for subtitle          
+coeffs=round(m$coefficients,4)
+form=paste(coeffs[1], " + ", coeffs[2],"*Year", sep="")
+
+#scatterplot with regression line 
+ggplot(data = DD, aes(x=Year, y=AvgDrive)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Linear Relationship Between Year and Average Driving Distance",
+     subtitle = paste("Formula: DrivingDistance(yds) = ", form)) +
+  scale_x_continuous(breaks = y1:y2)
+
+
+```
+</div>
+
+#### Table
+<div  class="back">
+```{r}
+#outputting ANOVA table
+m
+```
+
+</div>
+
+
+### *Is Average Carry Increasing?*{.tabset .tabset-pills}
+
+*******
+
+Driving distance is composed of two parts: carry distance and roll distance. I 
+want to determine whether drives are going further due to carry distance or roll
+distance. Again, simple linear regression models were used to quantify the 
+relationship between carry distance and time.
+
+This model suggests that carry distance is also increasing over time. This time 
+the coefficent for the `Year` variable is 1.0813. This is means that on average 
+carry distance increased by 1.0813 yards per season.
+
+#### Graph
+<div  class="back">
+```{r}
+# is average carry increasing?
+
+# subsetting and aggregating data for Carry Distance
+CD =
+  Drive %>%
+  transmute(
+    Year,
+    CDAttempts,
+    totaldistance = CarryDistance*CDAttempts) %>% 
+  group_by(Year) %>%
+  summarize(AvgCarry=sum(totaldistance)/sum(CDAttempts))
+
+#For ANOVA table
+m=summary(lm(AvgCarry~Year, CD))
+
+#for subtitle
+coeffs=round(m$coefficients,4)
+form=paste(coeffs[1], " + ", coeffs[2],"*Year", sep="")
+
+#Scatterplot and regression line 
+ggplot(data = CD, aes(x=Year, y=AvgCarry)) +
+  geom_point() +
+  geom_smooth(method = "lm", se=FALSE) +
+  labs(title = "Linear Relationship Between Year and Average Carry Distance",
+       subtitle = paste("Formula: CarryDistance(yds) = ", form)) +
+  scale_x_continuous(breaks = y1:y2)
+
+
+```
+</div>
+
+#### Table
+<div  class="back">
+```{r}
+#Outputting ANOVA table
+m
+```
+</div>
+<br>
+
+
+### *What About Roll* {.tabset .tabset-pills}
+
+*****
+
+Roll was calculated simply by subtracting `CarryDistance` from `DrivingDistance`.
+A regression model using this new roll variable suggests that the average roll
+has decreased since 2007. The coefficient value for the `Year` variable suggests
+that the average roll has decreased by 0.4941 yards per year on average. This result is not
+surprising given the results from the `CarryDistance` regression. In fact, 
+summing the `Year` coefficients for the roll and carry distance regressions is
+equal to the coefficient value from the `DrivingDistance` regression (i.e. 1.0813 - 0.4941 = 0.5873).
+
+#### Graph
+<div  class="back">
+```{r}
+#What about Roll Distance?
+
+#Joining CD and DD and using difference to calculate roll for each season
+Roll = inner_join(CD, DD, by = "Year") %>%
+  mutate(AvgRoll = AvgDrive - AvgCarry)
+
+#For ANOVA table 
+m=summary(lm(AvgRoll~Year, Roll))
+
+#for subtitle
+coeffs=round(m$coefficients,4)
+form=paste(coeffs[1], " + ", coeffs[2],"*Year", sep="")
+
+#Scatterplots and regression line for Roll Distance
+Roll %>%
+  ggplot(aes(x=Year, y=AvgRoll)) +
+  geom_point() +
+  geom_smooth(method = "lm", se=FALSE) +
+  labs(title = "Linear Relationship Between Year and Average Roll",
+       subtitle = paste("Formula: Roll(yds) = ", form)) +
+  scale_x_continuous(breaks = y1:y2) 
+
+
+
+```
+</div>
+
+
+#### Table
+<div  class="back">
+```{r}
+#ANOVA table
+m
+```
+</div>
+
+### {-}
+
+The previous models show that overall driving distance has increased due to an
+increase in carry distance even though the amount of roll has decreased. The 
+decrease in roll is the only surprising result. Why has roll decreased even 
+though distance, clubhead speed, and ball speed have not decreased? Two theories
+are that the small overall decrease in spin rate reduces the amount of roll, and
+that the increasing apex height results in a ball flight less condusive to roll.
+These two theories are explored further.
+
+<br>
+
+## Why Has Average Roll Decreased? {.tabset .tabset-pills}
+
+The following scatterplots show that there does appear to be an inverse
+relationship between apex height and roll distance while there appears to be no
+relationship between spin rate and roll distance. Based on this result alone, 
+spin rate does not appear to explain the decrease in roll.
+
+### Apex Height
+<div  class="back">
+```{r}
+#Scatterplot for Average roll vs apex height
+Drive %>%
+  mutate(AvgRoll= DrivingDistance - CarryDistance,
+         AOD = (180/pi)*atan(ApexHeight/(CarryDistance - ApexDistance))) %>%
+  ggplot(aes(x=AvgRoll, y=ApexHeight) ) +
+  geom_smooth(method = "lm", se=FALSE, color="black") +
+  geom_point(color="#008af4")
+```
+</div>
+
+### Spin Rate
+<div  class="back">
+```{r}
+#scatterplot for average roll vs spin rate, no correlation
+Drive %>%
+  mutate(AvgRoll= DrivingDistance - CarryDistance,
+         AOD = (180/pi)*atan(ApexHeight/(CarryDistance - ApexDistance))) %>%
+  ggplot(aes(x=AvgRoll, y=SpinRate) ) +
+  geom_smooth(method = "lm", se=FALSE, color="black") +
+  geom_point(color="#008af4") 
+```
+</div>
+
+## {-}
+
+My theory to explain the negative relationship between apex height and roll is 
+that the increase in height results in a more vertical descent of the ball and 
+makes the shot less condusive to rolling. To test this theory, I calculated a 
+variable called `AOD`, or Angle of Descent, which uses `ApexHeight`,
+`CarryDistance`, `ApexDistance` and the arctangent function to calculate the 
+angle between the apex and the landing spot. The graphic below crudely shows how
+the angle of descent has changed over time. While the graph is not a perfect 
+depiction of a shot, it does show that in general the angle of descent has 
+increased.
+
+<div  class="back">
+```{r}
+fp1 = # Data for Flight Path graphic
+  Drive %>% 
+  mutate(totalApexDist = ApexDistance * ADAttempts,
+         TotalApexHeight = ApexHeight*AhAttempts/3) %>% #converted to yards
+  group_by(Year) %>%
+  #getting yearly summary
+  summarize(AvgApexDistance = sum(totalApexDist)/sum(ADAttempts),
+            AvgApexHeight = sum(TotalApexHeight)/sum(AhAttempts)) %>%
+  inner_join(Roll, by = "Year") %>%
+  # angle of descent: arctan(opposite/adj)
+  mutate(AngleofDesc. = (180/pi)*atan(AvgApexHeight/(AvgCarry - AvgApexDistance)))
+
+#format the data into a tibble for ggplot
+fp = tibble(
+            Year = as.factor(rep(unique(fp1$Year),3)),
+            x = c(rep(0,13), fp1$AvgApexDistance, fp1$AvgCarry),
+            y = c(rep(0,13), fp1$AvgApexHeight, rep(0,13)),
+            AngleOfDescent = rep(round(fp1$AngleofDesc.,2),3))
+
+
+# flight path graphic
+ggplotly(
+  tooltip=c("group", "colour"),
+  ggplot(data=fp, aes(x=x, y=y, group=AngleOfDescent)) + 
+  geom_path(aes(colour=Year)) +
+  xlab("Distance(Yds)") + ylab("Height(Yds)") +
+  labs(title = "Shot Shape and Angle of Descent")
+    
+)
+```
+</div>
+
+## {.tabset .tabset-pills}
+A regression model was made to quantify the relationship between angle of 
+descent and time. Again, we see a significant increase in the angle of descent 
+over time. This means the ball appears to be landing at a steeper angle which 
+may be the reason behind the decrease in roll.
+
+### Graph
+<div  class="back">
+```{r}
+#Getting coefficients and formula for AOD regression line
+m=summary(lm(AngleofDesc.~Year, data=fp1))
+coeffs = round(m$coefficients,4)
+form=paste(coeffs[1], " + ", coeffs[2],"*Year", sep="")
+
+#scatterplot and regression line for AOD 
+ggplot(fp1, aes(Year, AngleofDesc.)) + 
+  geom_point() +
+  geom_smooth(method = "lm", se=FALSE) +
+  labs(title = "Linear Relationship Between AOD and Year",
+       subtitle = paste("Formula: AOD =", form))
+```
+</div>
+
+### Table
+<div  class="back">
+```{r}
+m
+```
+</div>
+
+## {-}
+
+<br>
+<div  class="blue">
+# Conclusions 
+</div>
+
+This study supports the notion that driving distance has increased in recent
+years on the PGA Tours. This increase appears to be largely correlated to the
+increase in clubhead and ball speed. In addition, it appears that the increase
+is due to ball travelling farther in the air as the distance the ball rolls has
+decreased. A possible explanation why drives are not rolling as far my be that
+there has been a increase in the angle of descent and drives are coming into 
+the ground on a steeper angle.
+
+This study may be improved data was unaggregated. The data originally 
+came as season long statistics. The ability to look at each stroke individually
+may allow for a better understanding of the relationships between the variables.
+Additionally, information on which club was used may be useful. According to the 
+PGA website this information was collected on par 4 and 5 holes, but it is not 
+guaranteed that a driver was used. This may slightly influence the results of 
+this analysis if the usage of driver has changed over time. 
+
