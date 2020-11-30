@@ -21,3 +21,7 @@ This is an independent project I completed using R and R markdown. In the projec
 ## PGA Tour Project
 
 This was another independent project where I attempted to predict the stroke average and winners on the PGA Tour for the 2019 season. I used regression and classification methods such as KNN, SVM, random forest, and logistic regression. This project was completed in Rmarkdown in Rstudio and used packages such as caret, tree, random forest and the tidyverse packages. Rendered document can be seen at the following link: [https://rpubs.com/caleb94/691849](https://rpubs.com/caleb94/691849).
+
+## Skin Cancer EDA
+
+This is a class assignment I completed using SAS. In the assignment I selected 10 variables from the well known SEER dataset and summarized them in a written report using tables, figures, and graphs. This project was completed using base SAS PROCS, DATA steps, and PROC SQL. The final written report can be found at the following link: []()
