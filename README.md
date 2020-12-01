@@ -12,6 +12,10 @@ This was class project I completed in my survival analysis course. In the projec
 
 This was independent project I completed in my free time. In the project, I scraped data from the internet and created a Shiny web app that can be used to compare salaries of MLB teams and players between the years of 1985 and 2016. The interactive app has numerous graphics and is user friendly. This project was completed in R and used packages such as Shiny, ggplot2, dplyr, and htmlab. The app can be accessed at the following link: [https://caleb94.shinyapps.io/MLBSalaries/](https://caleb94.shinyapps.io/MLBSalaries/)
 
+## New York Flu Dashboard
+
+This is an independent project I completed to demonstrate some of my Excel skills. The project is an Excel dashboard that analyzes and visualizes influenza infections in the state of New York. The dashboard demonstrates my knowledge of Excel functions, graphs, pivot tables, and data models. The Excel dashboard can be downloaded here: [https://github.com/CalebF94/Data-Analysis-Projects/blob/main/New%20York%20Flu%20Dashboard/Flu%20Dashboard.xlsx](https://github.com/CalebF94/Data-Analysis-Projects/blob/main/New%20York%20Flu%20Dashboard/Flu%20Dashboard.xlsx)
+
 
 ## PGA Tour Driving Distance Project
 
