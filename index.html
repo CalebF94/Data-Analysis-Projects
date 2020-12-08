@@ -1,4 +1,4 @@
-# Data Analysis Projects
+# Data Analysis Projects{.tabset}
 
 This repository contains examples projects that I have completed. Each project contains the code used to complete the project as well as other supporting files such as datasets or variables definitions. Brief descriptions of each project are provided below.
 
