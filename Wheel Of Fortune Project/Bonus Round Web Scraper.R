@@ -1,4 +1,4 @@
-# Author: Caleb Fornshell
+# Author: Caleb 
 # Description: A script to scape the Wheel of Fortune bonus puzzle information.
 #   Puzzle information taken from 
 #   https://www.angelfire.com/mi4/malldirectories/wheel/year/month.html
@@ -69,5 +69,5 @@ for(u in urls[,1]){
 
 #writing csv with final data
 write.csv(puzzles, 
-          file = "C:\\Users\\Caleb\\Desktop\\jobs\\Projects\\Wheel of Fortune\\BonusPuzzles.csv",
+          file = "BonusPuzzles.csv",
           fileEncoding = "UTF-8", row.names = FALSE)
