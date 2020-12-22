@@ -1,4 +1,4 @@
-## Wheel Of Forutne Project
+## Wheel Of Fortune Project
 
 ### Link to Final Report
 [https://rpubs.com/caleb94/706962](https://rpubs.com/caleb94/706962)
