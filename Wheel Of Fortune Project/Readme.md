@@ -8,3 +8,5 @@
 
 *Bonus Round Web Scraper.R*: Code for web scraper that gathered all off the Bonus Puzzle information.
 
+*Bonus Puzzles.csv*: Data gathered using web scraper and read in by 'WOF Project.Rmd'.
+
