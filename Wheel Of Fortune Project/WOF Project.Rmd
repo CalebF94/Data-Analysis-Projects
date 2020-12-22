@@ -39,7 +39,7 @@ div.back { background-color: white;
 
 ```{r, setup, include=FALSE}
 knitr::opts_chunk$set(comment = NA, warning = FALSE, message=FALSE)
-infile.csv = "C:\\Users\\Caleb\\Desktop\\jobs\\Projects\\Wheel of Fortune\\BonusPuzzles.csv"
+infile.csv = "BonusPuzzles.csv"
 ```
 
 <h1> <div  class="blue">  Introduction  </div> </h1>
