@@ -29,3 +29,9 @@ This was another independent project where I attempted to predict the stroke ave
 ## Skin Cancer EDA
 
 This is a class assignment I completed using SAS. In the assignment I selected 10 variables from the well known SEER dataset and summarized them in a written report using tables, figures, and graphs. This project was completed using base SAS PROCS, DATA steps, and PROC SQL. The final written report can be found at the following link: [https://github.com/CalebF94/Data-Analysis-Projects/blob/main/Skin%20Cancer%20EDA/Skin%20Cancer%20EDA.pdf](https://github.com/CalebF94/Data-Analysis-Projects/blob/main/Skin%20Cancer%20EDA/Skin%20Cancer%20EDA.pdf)
+
+## Wheel Of Fortune Project
+
+This is an independent project where I analyzed data from the Bonus Round of the TV game show Wheel Of Fortune. I created a web scraper to gather data that allowed me to determine which letters appear most often, which letters contestants choose most often, and which categories are the hardest. This project was completed using R and Rmarkdown in Rstudio and used packages such as rvest, dplyr, lubridate, and kable. The final written report can be found at the following link: [https://rpubs.com/caleb94/706962](https://rpubs.com/caleb94/706962)
+
+
