@@ -1,6 +1,6 @@
 ## PGA Tour Project
 
-### Linke to Final Report
+### Link to Final Report
 [ https://rpubs.com/caleb94/691849]( https://rpubs.com/caleb94/691849)
 
 ### File Descriptions
