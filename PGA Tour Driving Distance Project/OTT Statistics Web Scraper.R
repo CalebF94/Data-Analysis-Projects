@@ -2,8 +2,8 @@
 #                                                                              #
 # This program will scrape data from the PGA Tour website. It will also clean  #
 # some of the data and convert to proper data types. Each statistic will be    #
-# saved to its own table. The tables will later be merged in MYSQL.            #
-#                                                                              #
+# saved to its own table. The tables will later be merged in MYSQL. I used     #
+# MySQL to demonstrate my SQL skills                                           #
 ################################################################################
 
 library(rvest)
