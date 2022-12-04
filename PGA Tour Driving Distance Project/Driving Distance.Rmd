@@ -15,7 +15,7 @@ The data for this project can be found in the driving_master.csv file.
 
 Objective of the project is to determine whether driving distance has seen a 
 statistically significant increase in driving distance and what caused the 
-change if seen.
+change if a change is found.
 -->
 
 
