@@ -39,16 +39,16 @@ div.back { background-color: white;
 
 ```{r, setup, include=FALSE}
 knitr::opts_chunk$set(comment = NA, warning = FALSE, message=FALSE)
-infile.csv = "BonusPuzzles.csv"
+infile.csv = "https://raw.githubusercontent.com/CalebF94/Data-Analysis-Projects/main/Wheel%20Of%20Fortune%20Project/BonusPuzzles.csv"
 ```
 
 <h1> <div  class="blue">  Introduction  </div> </h1>
 
 
 
-Game shows provide contestants a quick way to win lots of cash and prizes. Many game shows have a final round where contestestants have an opportunity to quickly increase their winnings. In Wheel of Fortune this final round is known as the Bonus Round. The Bonus Round gives the show's winner one final puzzle. To help solve the Bonus Puzzle the contestant selects a Category and the letters *R, S, T, L, N, E* are revealed. The contestant then gets to choose 3 more consonants and 1 vowel; The contestants gets a fourth consonant if they won the wild card in a prior round. The goals of this analysis are to determine:
+Game shows provide contestants a quick way to win lots of cash and prizes. Many game shows have a final round where contestestants have an opportunity to quickly increase their winnings. In Wheel of Fortune this final round is known as the Bonus Round. The Bonus Round gives the show's winner one final puzzle. To help solve the Bonus Round's Puzzle the contestant selects a Category and the letters *R, S, T, L, N, E* are automatically revealed. The contestant then gets to choose 3 more consonants and 1 vowel; The contestants gets a fourth consonant if they won the wild card in a prior round. The goals of this analysis are to answer the following questions:
 
-+ What categories occur most often and are the hardest?
++ Which categories occur most often and are the hardest?
 + What letters are most commonly chosen?  
 + What letters should be chosen?  
 + What is the role of repeating consecutively letters? (Ex. "HELLO" contains back to back L's)  
@@ -57,11 +57,11 @@ Game shows provide contestants a quick way to win lots of cash and prizes. Many 
 These questions were picked from my own curiosity and personal interests. Wheel of Fortune is one of my favorite shows, and I watch it often. Being a fan of the show, I have often wondered whether contestants are maximizing their probability of success, and I want to have a plan in case I get to be on the show someday. 
 
 ***
-This analysis is segemented into four main sections:  
+This analysis is segmented into four main sections:  
 
-+ **Prequisites**: Loading packages, defining custom functions, reading in data
-+ **Data**: Explanation of Data collection, format, cleaning
-+ **Research** Questions: Investigation into each research question; Subsections for each Question
++ **Prerequisites**: Loading packages, defining custom functions, reading in data
++ **Data**: Explanation of data collection, format, cleaning
++ **Research Questions**: Investigation into each research question; Subsections for each question
 + **Conclusion and Further Research**: Summarize findings and discuss issues, possible improvements, and future ideas
 
 <h1> <div  class="blue">  Prerequisites  </div> </h1>
@@ -128,7 +128,7 @@ It's worth noting that there are 1754 observations of 9 variables:
 
 Below some minor issues that I discovered were corrected. DATE was converted, and some minor issues with the input of rows was corrected.
 
-```{r}
+```{r class.source='fold-show'}
 WOF = WOF %>% mutate(DATE = ymd(DATE))
 
 WOF$L2[1563] = "D"# was coded as D?
@@ -222,7 +222,7 @@ ExpVal = num_appearance %>%
 
 ## What Categories Occur Most Often and Are the Hardest {.tabset .tabset-fade}
 ***
-In total 24 different categories were used. Some of these categories are plurals of the same categories(Thing and Things). Of the 24, the most common categories only 9 were used more than 30 times, with "Phrase" and "Thing/Things" being by far the most common.
+In total 24 different categories were used. Some of these categories are plurals of the same categories(Thing and Things). Only nine of the categories were used more than 30 times, with "Phrase" and "Thing/Things" being by far the most common.
 
 
 
@@ -241,7 +241,7 @@ kable_styling(
 ```
 </div>
 
-If we perform a chi-square test of independence, we can determine if the category is independent of puzzle difficulty. We can calculate the expected number of wins using the overall and win probability and the number of times each category appeared. A category with fewer wins than expected indicates a tougher category. The null and alternative hypotheses for our chi-square test are: 
+If we perform a chi-square test of independence, we can determine if the puzzle category is independent of puzzle difficulty. We can calculate the expected number of wins using the overall win probability and the number of times each category was selected. A category with fewer wins than expected indicates a tougher category. The null and alternative hypotheses for our chi-square test are: 
 
 $$  H_0: \text{Variables are independent} \\ 
     H_1: \text{Variables are dependent}
@@ -285,12 +285,12 @@ t(x$residuals)
 
 ## {-}
 
-The output above indicates rejection of the null hypothesis and that the variables are not independent(p-value = .01441), i.e. the probability of winning changes based on category. All expected values are greater than 5, and it is reasonable to  assume each puzzle is independent from one another. The standardized residual table shows the hardest categories are 'Thing/s' and 'People'. These have the largest negative values in the 'Yes' column. The easiest categories are 'Phrase' and 'Food & Drink.'
+The output above indicates rejection of the null hypothesis and that the variables are not independent(p-value = .01441), i.e. the probability of winning changes based on category. All expected values are greater than 5, and it is reasonable to  assume each puzzle is independent from one another. The standardized residual table shows the hardest categories are 'Thing/s' and 'People'. These have the smallest negative values in the 'Yes' column which indicates there were fewer wins than expected if we assume each category is the same difficulty. The easiest categories are 'Phrase' and 'Food & Drink' as these categories have the largest values in the 'Yes' column.
 
 
 
 
-<h2> What Letters Appear Most Often? </h2>
+## What Letters Appear Most Often? ## 
 ***
 I want to see which letters appear in the Bonus Puzzle the most.
 
@@ -310,11 +310,11 @@ num_app = num_appearance %>%
   geom_bar(stat = "identity", aes(y=Count, fill=Given)) +
   geom_line(aes(y=1899*Percent, group=1)) +
   geom_point(aes(y=1899*Percent)) +
-  xlab(label = "") + ylab("Letter Appearances") +
+  xlab(label = "") + ylab("Letter Appearances (bars)") +
   labs(title = "Number of Letter Appearance and \nPercentage of Puzzles Containing Letter")+
   scale_y_continuous(
     trans= 'reverse',
-    sec.axis = sec_axis(~./1899,breaks = seq(0,1,.2), name = "% of Puzzles"),
+    sec.axis = sec_axis(~./1899,breaks = seq(0,1,.2), name = "% of Puzzles (line)"),
     breaks = seq(0, 1899, length.out = 6),
     labels = c("0","400","800","1200","1600","2000")) +
   guides(fill=FALSE) +
@@ -346,11 +346,11 @@ ggarrange(num_app, ExVal, ncol=2)
 ```
 </div>
 
-The left bar chart above shows the most common letters and the line shows the percentage of puzzles in which the letter appears. The given letters (*R, S, T, L, N, E*) are shown in blue. Not surprisingly, the four most common letters are vowels. We also see that the given letters(blue bars) are all in the top 13 most used letters. I would think the consonants given the most common in the English language, so maybe they choose puzzles that don't contain them. This chart suggests a contestant should select *H, G, P and O* to reveal the most letters on average.
+The left bar chart above shows the most common letters and the line shows the percentage of puzzles in which the letter appears. The given letters (*R, S, T, L, N, E*) are shown in blue. Not surprisingly, the four most common letters are vowels. We also see that the given letters(blue bars) are all in the top 13 most used letters. This visual suggests a contestant should select *H, G, P and O* to reveal the most letters on average.
 The chart on the right shows the number of times each letter is expected to appear in every puzzle. This means if we select *H, G, P* and *O* on average about 2.5 letters will be revealed. 
 
 
-<h2> What Letters Are Chosen Most Often? </h2>
+## What Letters Are Chosen Most Often?  {.tabset .tabset-fade}
 ***
 
 I wanted to see if contestants were selecting the most frequently appearing letters.
@@ -360,9 +360,9 @@ I wanted to see if contestants were selecting the most frequently appearing lett
 num_guessed =tibble(
   Guesses = table(c(WOF$L1, WOF$L2, WOF$L3, WOF$L4, WOF$L5), useNA = "always"),
   Letter = names(table(c(WOF$L1, WOF$L2, WOF$L3, WOF$L4, WOF$L5), useNA = "always"))) %>%
-  mutate(Guesses = as.numeric(Guesses))
+  mutate(Guesses = as.numeric(Guesses)) 
 
-  ggplot(data=num_guessed, aes(x=reorder(Letter, -Guesses), y=Guesses)) +
+  ggplot(data=num_guessed %>% filter(Letter!='NA'), aes(x=reorder(Letter, -Guesses), y=Guesses)) +
     geom_bar(stat="identity", fill = "#F8766D") +
     labs(
       title = "Number of Times Letter Was Guessed",
@@ -374,29 +374,53 @@ num_guessed =tibble(
 
 The chart above shows the most common letters chosen are *C, M, D, A*. Other than *A* none of these letters appear the top 50% of most used letters. This suggests most people are not maximizing the selections. If a contestant chose *C, M, D, A* s/he could expect 1.91 letters on average; more than half a letter less than the optimum selection *H, G, P, O*. I now want to check whether these two letter groups had different win percentages.
 
+  
+  
+
+
+The number of contestants who chose these combinations of letters is shown below. We see many more contestants chose *C, M, D, A*, but there does not appear to be a significant difference in win percentage. Larger sample sizes may be needed to make a more definitive statement.
+
+### Summary of Guesses
 ```{r}
 HGPA = c("H", "G", "P", "O")
 CMDA = c("C", "M", "D", "A")
-rbind(
-HGPA = WOF %>%
-  filter(L1 %in% HGPA & L2 %in% HGPA & L3 %in% HGPA & L4 %in% HGPA) %>%
-  summarize(Count = n(), "Win%" = mean(WIN == "Yes")),
 
-CMDA = WOF %>%
-  filter(L1 %in% CMDA & L2 %in% CMDA & L3 %in% CMDA & L4 %in% CMDA) %>%
-  summarize(Count = n(), "Win%" = mean(WIN=="Yes"))
-)
+guess_results = 
+  cbind(
+    Guess = c("HGPA", "CMDA"),
+  
+    rbind(
+    HGPA = WOF %>%
+      filter(L1 %in% HGPA & L2 %in% HGPA & L3 %in% HGPA & L4 %in% HGPA) %>%
+      summarize(Count = n(), 
+                "Wins"=sum(WIN=="Yes"),
+                "Win%" = mean(WIN == "Yes")),
+    
+    CMDA = WOF %>%
+      filter(L1 %in% CMDA & L2 %in% CMDA & L3 %in% CMDA & L4 %in% CMDA) %>%
+      summarize(Count = n(),
+                "Wins" = sum(WIN=="Yes"),
+                "Win%" = mean(WIN=="Yes"))
+    )
+  ) 
+
+guess_results
 ```
 
-The number of contestants who selected each of these selections is shown above. We see many more contestants chose *C, M, D, A*, but there does not appear to be a significant difference in win percentage. Larger sample sizes may be needed to make a definitive statement.
+### Hypothesis Test
+```{r}
+prop.test(x=guess_results[, "Wins"], n=guess_results[, "Count"])
+
+```
 
 
-<h2> What Is the Effect of Double Letters? </h2>
+
+## What Is the Effect of Double Letters? 
 ***
 
-English words often contain consecutive repeating letters. In my experience a puzzle is much harder to solve when there are repeating consecutive letters(double letters) that are not known. I want to see what letters appear consecutively most often and if puzzles that have unknown double letters are harder. 
+English words often contain consecutive repeating letters. In my experience, a puzzle is much harder to solve when there are repeating consecutive letters(double letters) that are not known. I want to see which letters appear consecutively most often and if puzzles containing unknown double letters are harder. 
 
-Below is the number of times each letter appears consecutively and the count and winning percentage of puzzles with and without double letters.
+The column graph below shows the number of times each letter appears consecutively and the table shows the number of puzzles that contained unknown double letters and the winning percentage of puzzles with and without double letters.
 
 <div class = "back">
 ```{r}
@@ -437,7 +461,7 @@ No_Doubles = no_doubles_winners %>%
 cbind(Puzzle = c("Doubles", "No Doubles"), rbind(Doubles, No_Doubles))
 ```
 
-The results above show the letters *O, F*, and *P* are the letters appearing consecutively most often. There my be a slight decrease in win percentage in puzzle that contain doubles letters. Again, a hypothesis test was performed to determine whether this decrease is significant.
+The results above show the letters *O, F*, and *P* are the letters appearing consecutively most often. There may be a slight decrease in win percentage in puzzle that contain doubles letters. A  hypothesis test was performed to determine whether this decrease is significant.
 
 $$ H_0: \text{Puzzles with double letters are of equal difficuly} \\ 
    H_1: \text{Puzzles with double letters are of higher difficulty} 
@@ -484,22 +508,19 @@ prop.test(c(x1,x2), c(n1,n2), correct=F, alternative = 'g')
 
 ```
 
-This hypothesis suggests if a contestant successfully guesses a double letter their chance of winning significantly improves(p-value < 0.0001). Even though successfully guessing a double letter significantly improves winning percentage, hunting double letters may not be a valid strategy as double letters only appear in about 23% of puzzles.
+The results of this hypothesis test suggests if a contestant successfully guesses a double letter their chance of winning significantly improves(p-value < 0.0001). Even though successfully guessing a double letter significantly improves winning percentage, hunting double letters may not be a valid strategy as double letters only appear in about 23% of puzzles.
 
 
 <h2> Does the Wild Card Increase Winning Percentage? </h2>
 ***
 
-The Wild Card may provide the contestant an edge. If the contestant possesses the Wild Card s/he is granted an extra consonant. The number of contestants who had the Wild Card and a two-proportion hypothesis test are shown below. This is again a one-sided test, because I think the winning percentage will increase if the contestant has the Wild Card.
+The Wild Card may provide the contestant an edge. If the contestant possesses the Wild Card s/he is granted an extra consonant. In total `r sum(!is.na(WOF$L5))` contestants had the Wild Card entering the Bonus Round. A two-proportion hypothesis test was performed to determine if contestants who had the Wild Card had a better win percentage than those who did not have the Wild Card . This is again a one-sided test, because I believe the winning percentage will increase if the contestant has the Wild Card.
 
-```{r class.source='fold-show'}
+
+```{r}
 wild = WOF %>%
   filter(!is.na(L5))
 
-length(wild$WIN)
-```
-
-```{r}
 no_wild = WOF %>%
   filter(!(DATE %in% wild$DATE))
 
@@ -523,18 +544,18 @@ This study analyzed the results of Bonus Puzzles in the game show Wheel of Fortu
   - The most difficult categories are Thing/s and People. The easiest categories are Phrase and Food & Drink 
 
 + **What letters appear most often?**
-  - The most frequently occuring consonants are *T, R, N, H*, and *G*.
+  - The most frequently occurring consonants are *T, R, N, H*, and *G*.
   - The optimal choice of letters is *H, G, P*, and *O*.
 
 + **What letters do contestants select most often?**
   - The most common consonants are *C, M, D*, and *P*.
   - The most common vowel selected is *A*.
-  - On average contestants do not select the optimal letters.
+  - On average contestants do not select the optimal letters, although choosing the optimal letters does not provide a statistically significant advantage over the most common selection.
 
 + **What is the effect of double letters?**
   - The most frequent double letters are *O, F*, and *P*.
   - Double letters occur in approximately 23% of puzzles.
-  - There is some evidence puzzles with double letters are harder (p-value = 0.07284).
+  - There is statistically significant evidence that puzzles with double letters are harder (p-value = 0.07284).
   
 + **Does the Wild Card increase Winning Percentage?**
   - Contestants had the wild card 206 times(~12%).
