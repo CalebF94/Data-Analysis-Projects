@@ -1,4 +1,4 @@
-# Author: Caleb 
+# Author: Caleb Fornshell
 # Description: A script to scape the Wheel of Fortune bonus puzzle information.
 #   Puzzle information taken from 
 #   https://www.angelfire.com/mi4/malldirectories/wheel/year/month.html
@@ -9,7 +9,7 @@
 #         PUZZLE: Soluntion to puzzle
 #         L1: Consonents selected by contestant
 #         L4: Vowel selected by contestant
-#         L5: fourth consonent selected by contestant if s/he had wild card
+#         L5: fourth consonent selected by contestant if s/he had wild card. NA if customer didn't have wild card
 #         WIN: Did the contestant win? YES/NO
 
 
