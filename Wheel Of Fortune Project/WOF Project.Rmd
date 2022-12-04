@@ -46,7 +46,7 @@ infile.csv = "https://raw.githubusercontent.com/CalebF94/Data-Analysis-Projects/
 
 
 
-Game shows provide contestants a quick way to win lots of cash and prizes. Many game shows have a final round where contestestants have an opportunity to quickly increase their winnings. In Wheel of Fortune this final round is known as the Bonus Round. The Bonus Round gives the show's winner one final puzzle. To help solve the Bonus Round's Puzzle the contestant selects a Category and the letters *R, S, T, L, N, E* are automatically revealed. The contestant then gets to choose 3 more consonants and 1 vowel; The contestants gets a fourth consonant if they won the wild card in a prior round. The goals of this analysis are to answer the following questions:
+Game shows provide contestants a quick way to win lots of cash and prizes. Many game shows have a final round where contestants have an opportunity to quickly increase their winnings. On Wheel of Fortune, this final round is known as the Bonus Round. The Bonus Round gives the show's winner one final puzzle. To help solve the Bonus Round Puzzle the contestant selects a category and the letters *R, S, T, L, N, E* are automatically revealed. The contestant then gets to choose 3 more consonants and 1 vowel; The contestants gets a fourth consonant if they won the wild card in a prior round. The goals of this analysis are to answer the following questions:
 
 + Which categories occur most often and are the hardest?
 + What letters are most commonly chosen?  
@@ -60,7 +60,7 @@ These questions were picked from my own curiosity and personal interests. Wheel 
 This analysis is segmented into four main sections:  
 
 + **Prerequisites**: Loading packages, defining custom functions, reading in data
-+ **Data**: Explanation of data collection, format, cleaning
++ **Data**: Explanation of data collection, data format, and data cleaning
 + **Research Questions**: Investigation into each research question; Subsections for each question
 + **Conclusion and Further Research**: Summarize findings and discuss issues, possible improvements, and future ideas
 
@@ -121,7 +121,7 @@ str(WOF)
 It's worth noting that there are 1754 observations of 9 variables:
 
 + DATE: Date show aired
-+ CATEGORY: Puzzle Category
++ CATEGORY: Puzzle category
 + PUZZLE: Solution to the Bonus Puzzle
 + L1-L5: Letters selected by contestant. Typically the vowel is selected last(L4). L5 contains NAs because only contestants with the Wild Card get to select a fifth letter
 + WIN: Indicates whether the contestant won
@@ -168,7 +168,7 @@ scroll_box(kable_styling(kable(reps), bootstrap_options = 's'), height = '400px'
 
 
 <h1> <div  class="blue">  Research Questions  </div> </h1>
-To answer the research questions, the data needs to be transformed, subsetted, and altered into a more user friendly format containing counts of each letter. The changes are shown below.
+Before answering the research questions, the data needs to be transformed, subsetted, and altered into a more user friendly format containing counts of each letter. The changes are shown below.
 
 ```{r class.source='fold-show'}
 # How often does each letter appear in the puzzle
@@ -247,7 +247,7 @@ $$  H_0: \text{Variables are independent} \\
     H_1: \text{Variables are dependent}
 $$
 
-To ensure all assumptions of the chi-square test are met, only categories with greater than 30 appearances will be used. 
+To ensure all assumptions of the chi-square test are met, only categories with greater than 30 appearances will be used. This ensures all expected values are greater than 5. It is reasonable to  assume each puzzle is independent from one another
 
 
 ### Chi-Square Test
@@ -285,7 +285,7 @@ t(x$residuals)
 
 ## {-}
 
-The output above indicates rejection of the null hypothesis and that the variables are not independent(p-value = .01441), i.e. the probability of winning changes based on category. All expected values are greater than 5, and it is reasonable to  assume each puzzle is independent from one another. The standardized residual table shows the hardest categories are 'Thing/s' and 'People'. These have the smallest negative values in the 'Yes' column which indicates there were fewer wins than expected if we assume each category is the same difficulty. The easiest categories are 'Phrase' and 'Food & Drink' as these categories have the largest values in the 'Yes' column.
+The Chi-Square Test output above indicates rejection of the null hypothesis and that the variables are not independent(p-value = .01441), i.e. the probability of winning changes based on category. The standardized residual table shows the hardest categories are 'Thing/s' and 'People'. These have the smallest negative values in the 'Yes' column which indicates there were fewer wins than expected assuming each category has the same difficulty. The easiest categories are 'Phrase' and 'Food & Drink' as these categories have the largest values in the 'Yes' column.
 
 
 
@@ -365,8 +365,7 @@ num_guessed =tibble(
   ggplot(data=num_guessed %>% filter(Letter!='NA'), aes(x=reorder(Letter, -Guesses), y=Guesses)) +
     geom_bar(stat="identity", fill = "#F8766D") +
     labs(
-      title = "Number of Times Letter Was Guessed",
-      subtitle = "NA indicates Wild Card was not used") +
+      title = "Number of Times Letter Was Guessed") +
     xlab("")
     
 ```
@@ -461,7 +460,7 @@ No_Doubles = no_doubles_winners %>%
 cbind(Puzzle = c("Doubles", "No Doubles"), rbind(Doubles, No_Doubles))
 ```
 
-The results above show the letters *O, F*, and *P* are the letters appearing consecutively most often. There may be a slight decrease in win percentage in puzzle that contain doubles letters. A  hypothesis test was performed to determine whether this decrease is significant.
+The results above show the letters *O, F*, and *P* are the letters appearing consecutively most often. There may be a slight decrease in win percentage in puzzle that contain doubles letters. A  hypothesis test was performed to determine whether this decrease is statistically significant.
 
 $$ H_0: \text{Puzzles with double letters are of equal difficuly} \\ 
    H_1: \text{Puzzles with double letters are of higher difficulty} 
@@ -492,10 +491,12 @@ doubles = WOF %>%
   filter(str_detect(GUESSES, D1) | str_detect(GUESSES, D2) | str_detect(GUESSES, D3))
 
 no_doubles = WOF[(match(WOF$DATE, doubles$DATE, nomatch = FALSE) == 0),]
-  
-rbind(Doubles = doubles %>% summarize(count = n(), "win%" = mean(WIN == "Yes") ),#396
-      No_Doubles = no_doubles %>% summarize(count = n(), "win%" = mean(WIN == "Yes")))
 
+cbind(
+  Puzzle = c("Guessed Double Letter", "Did Not Guess Double Letter"),
+  rbind(Doubles = doubles %>% summarize(count = n(), "win%" = mean(WIN == "Yes") ),#396
+      No_Doubles = no_doubles %>% summarize(count = n(), "win%" = mean(WIN == "Yes")))
+)
 
 #if guessed a double letter, are you more likely to win? YES, maybe because 
 # contested knew before guessing
@@ -514,7 +515,7 @@ The results of this hypothesis test suggests if a contestant successfully guesse
 <h2> Does the Wild Card Increase Winning Percentage? </h2>
 ***
 
-The Wild Card may provide the contestant an edge. If the contestant possesses the Wild Card s/he is granted an extra consonant. In total `r sum(!is.na(WOF$L5))` contestants had the Wild Card entering the Bonus Round. A two-proportion hypothesis test was performed to determine if contestants who had the Wild Card had a better win percentage than those who did not have the Wild Card . This is again a one-sided test, because I believe the winning percentage will increase if the contestant has the Wild Card.
+The Wild Card may provide the contestant an edge. If the contestant possesses the Wild Card s/he is granted an extra consonant. In total `r sum(!is.na(WOF$L5))` contestants had the Wild Card entering the Bonus Round. A two-proportion hypothesis test was performed to determine if contestants who had the Wild Card had a better win percentage than those who did not have the Wild Card . This is again a one-sided test because I believe the winning percentage will increase if the contestant has the Wild Card.
 
 
 ```{r}
@@ -555,13 +556,13 @@ This study analyzed the results of Bonus Puzzles in the game show Wheel of Fortu
 + **What is the effect of double letters?**
   - The most frequent double letters are *O, F*, and *P*.
   - Double letters occur in approximately 23% of puzzles.
-  - There is statistically significant evidence that puzzles with double letters are harder (p-value = 0.07284).
+  - There is some weak evidence that puzzles with double letters are harder (p-value = 0.07284).
   
 + **Does the Wild Card increase Winning Percentage?**
   - Contestants had the wild card 206 times(~12%).
-  - There is some evidence the wild card significantly improves winning percentage (p-value = 0.03484)
+  - There is statistically significant evidence the wild card improves winning percentage (p-value = 0.03484)
 
 
-This study is could be improved if more recent data was available. The data for this study was from 2007-2015. This would allow for more recent changes to the game to be examined. WOF regularly adds new categories and rules. For example, in 2017, contestants began having the choice of three categories in the bonus round. This could skew the most common category. I would also like to study other rounds including toss-ups and the prize puzzle, but I was unable to acquire this data.
+This study is could be improved if more recent data was available. The data for this study was from 2007-2015. This would allow for more recent changes to the game to be examined. WOF regularly adds new categories and rules. For example, in 2017, contestants began having the choice of three categories in the Bonus Round. This could skew the most common category. I would also like to study other rounds including toss-ups and the prize puzzle, but I was unable to acquire this data.
 
 In general, I think this study provides interesting insight into the Wheel of Fortune Bonus Puzzle. While data may be a bit dated, it still provides good insight on what letters and categories to choose and avoid.
