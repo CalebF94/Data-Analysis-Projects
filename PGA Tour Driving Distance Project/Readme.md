@@ -4,7 +4,7 @@
 [https://rpubs.com/caleb94/696834](https://rpubs.com/caleb94/696834)
 
 ### File Descriptions
-*Driving Distance.Rmd*: Contains code to generate final html document.
+*Driving Distance.Rmd*: Contains code that generated final html document found the Final Report.
 
 *DrivingDistance.sql*: mySQL script that created a data base and joined all tables.
 
