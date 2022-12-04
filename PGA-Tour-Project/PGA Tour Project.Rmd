@@ -40,7 +40,7 @@ require(caret)#knnreg()
 require(tree)
 require(randomForest)
 require(e1071) #svm() function
-PGAdata=read_csv("PGA_cleaned.csv")
+PGAdata=read_csv("https://raw.githubusercontent.com/CalebF94/Data-Analysis-Projects/main/PGA-Tour-Project/data/PGA_CLEANED.csv")
 
 
 #Separating data into test and training sets for later analysis
@@ -66,11 +66,11 @@ test.Winners=PGAdata[PGAdata$Year==2019, c(3,16)]
 ## *Introduction*
 *****
 The emergence of data analytics has impacted the way sports are played across
-the world, and the PGA tour is no different. Over the last few years data has 
-greatly impacted the way golfers play and how they are compared to one another. 
+the world, and the PGA tour is no exception. Over the last few years data analytics 
+has greatly impacted the way golfers play and how they are compared to one another. 
 The goal of this project is to gain an understanding of which variables of a 
-golfers performance are most important to determine whether a golfer will shoot 
-low and win a tournament.
+golfer's performance are most important in predicting whether a golfer will shoot 
+a low score and win a tournament.
 
   
 <p>&nbsp;</p>    
@@ -78,20 +78,19 @@ low and win a tournament.
 *****
 The player performance data for this project was scraped from the official
 website of the PGA Tour, and the information on tournament winners is from 
-Wikipedia. Both sources were scraped using Power Querey. The variables used were
+Wikipedia. Both sources were scraped using Power Query. The variables used were
 chosen based on my knowledge and interest of golf. In total, 14 variables were 
 scraped from the PGA tour website and one from Wikipedia. One variable contained
-playerand year combined. These were split into two separate variables, which 
-resulted in the variables used in this analysis. A full description of each 
+player and year combined. These were split into two separate variables, resulting
+in the variables used in this analysis. A full description of each 
 variable can be found [here,](https://tinyurl.com/y4wljbxy) and the structure 
-of data set is below.
+of data set is shown below.
 ```{r}
 str(PGAdata)
 ```
 
 This project uses two response variables, `StrokeAverage` and `Winner`, and
-twelve predictor variables which conceptually fall into one of 
-three groups:
+twelve predictor variables each falling into one of three groups:
 
 * Off the Tee Statistics
   + `AvgClubheadSpeed`, `AvgBallSpeed`, `LaunchAngle`, `SpinRateOTT`
@@ -104,14 +103,14 @@ three groups:
 <p>&nbsp;</p>    
 ## *Exploratory Data Analysis*
 ******
-To begin, the numer of golfers from each year is determined. The barplot shows
-there were around 180-190 golfers from each season.
+To begin, the number of golfers from each year is determined. The barplot shows
+there were between 180-190 golfers each season.
 ```{r, message=FALSE, fig.height=3, fig.align="center"}
 #Number of qualified golfers each season
 ggplot(data=PGAdata, aes(x=Year)) + 
   geom_bar() +
   geom_text(stat='count', 
-            aes(label=..count..), 
+            aes(label=after_stat(count)), 
             vjust=-.1, 
             position =position_dodge(width=.8)) +
   ylab("Number of Golfers")+
@@ -119,7 +118,7 @@ ggplot(data=PGAdata, aes(x=Year)) +
 ```
 
 
-Next, the distributions of the numeric variables were plotted and displayed. The
+Next, the distributions of the numeric variables are plotted and displayed. The
 histograms and summary statistics table show that these variables are symmetric
 and appear uni-modal. There are not any eye-catching anomalies that need to 
 be addressed at this time.
@@ -132,7 +131,7 @@ grid-column-gap: 10px; "}
 # density and histogram of all predictor variables OTT
 ggplot(data=melt(predStAvg), aes(x=value))+
   geom_density(color="black") + 
-  geom_histogram(aes(y = ..density..), bins=20 )+
+  geom_histogram(aes(y = after_stat(density)), bins=20 )+
   facet_wrap(~variable,scales = "free", ncol = 3)+
   labs(title = "Density Plots For All Predictor Variables") +
   theme(strip.text = element_text(size = 14))
@@ -166,9 +165,10 @@ SummaryStats
 It is also important to understand the relationship between the predictor
 variables. The correlation plot below shows the linear relationship between all
 predictors. One pair of variables that has a very large positive correlation is 
-`AvgClubheadSpeed` and `AvgBallSpeed`. This relationship, intuitivaley, is not 
-surprising. There are also some negative correlations that are relatively high 
-as well. These pair of variables will need to be considered in future analyses.
+`AvgClubheadSpeed` and `AvgBallSpeed`. This relationship, intuitively, is not 
+surprising. There are also some relatively large negative correlations.
+These high correlations will need to be considered in future analyses where
+multicollinearity may be an issue.
 
 
 
@@ -199,15 +199,16 @@ from 2019.
 train = PGAdata[PGAdata$Year!=2019 , c(4:15,17)]
 test = PGAdata[PGAdata$Year==2019 , c(4:15,17)]
 ```
-In total ther are `r dim(train)[1]` observations in the training set and 
+In total there are `r dim(train)[1]` observations in the training set and 
 `r dim(test)[1]` observations in the test set.
 
 ### K-Nearest Neighbors
 The first method used will the non-parametric method K-nearest neigbors(KNN). 
 The package `caret` contains the `knnreg()`function implemented here. In these 
 models the critical parameter is K, the number of neighbors. The chosen K will
-be the valuethat minimizes the MSE of the test data. The results of the model 
-are shown in the graph below.
+be the value that minimizes the MSE of the test data. The results of the different
+models are shown in the graph below, where we see that the MSE is minimized when 
+K=12.
 
 ```{r, message=FALSE, warning=FALSE}
 
@@ -241,14 +242,16 @@ points(x=bestk, y=min(mse.vector), col="red", pch=19)
 
 ### Tree Based Methods 
 Regression trees are another non-parametric method. A simple regression tree and
-a random forrest will be implemented using the `tree` and `randomForest`
+a random forest will be implemented using the `tree` and `randomForest`
 packages. 
+
+<br>   
 
 #### *Regression Tree*
 First, a simple tree. I will fit a simple tree model. Because there
 are a relatively large number of predictors, the tree will be "trimmed" using 
-cross validation in the `prune.tree()` and `cv.tree()` functions and choosing
-the tree with 10 "leaves" minimizes the MSE on the test set.
+cross validation in the `prune.tree()` and `cv.tree()` functions.The tree with 
+10 "leafs" minimizes the MSE on the test set.
 
 ```{r, fig.width=12, fig.height=10}
 
@@ -282,10 +285,10 @@ text(pruned.tree, pretty=0)
 ```
 
 #### *Random Forest*
-Random forests are an improvement over a simple tree because it produces many
+Random forests are an improvement over a simple tree because this method produces many
 uncorrelated trees which results in a smaller variance. It also restricts the
-variables that are available at each break in the tree, so it considers the 
-effects of all variables even if they are correlated with best single predictor.
+variables that are available at each break in the tree(`mtry`), so the model considers the 
+effects of all variables even if a variable is correlated with the single best predictor.
 
 ```{r, fig.width=12}
 
@@ -321,19 +324,20 @@ varImpPlot(randomForest(StrokeAverage~., data=train, mtry=best),
 ```
 
 Another important feature with using tree based methods is it allows us to make
-a statement about which variables are most significant. The pruned and unpruned
+a statement about which variables are most significant. The pruned tree, the unpruned
 tree and the variable importance plot all have `AvgBallSpeed` as the upper
 most variable, so we can safely say that a higher `AvgBallSpeed` is an important
 factor in predicting `StrokeAverage`. All methods also have `PuttLT10Made` as 
 the next highest variable, typically followed by some type of shot to the green. 
 
-### Comparison of Methods
-The tables below show a comparison of the methods used above. Random forest was
+### Comparison of Methods {.tabset}
+The tables below show a comparison of the methods previously described. Random forest was
 by far the best method based on minimizing the MSE. KNN, unpruned, and pruned 
-regression trees all performed substantially worse. The bottom table compares 
+regression trees all performed substantially worse. The second table compares 
 the 2019 golfers' stroke averages to those predicted by the forest table.
 
 
+#### Summary of Results 
 ```{r}
 tibble(Method = c("K-Nearest Neighbors", "Unpruned Regression Tree",
                   "Pruned Regression Tree", "Random Forest"),
@@ -344,6 +348,7 @@ tibble(Method = c("K-Nearest Neighbors", "Unpruned Regression Tree",
 ```
 
 
+#### Predicted Vs. Observed
 ```{r}
 
 SummTable=cbind(PGAdata %>% 
@@ -359,18 +364,25 @@ SummTable
 ## *Predicting Winners* 
 *****
 In professional sports, winning is everything. Based on the years 2015-2018, 
-models to predict winners on the PGA tour can be constructed. The models 
+statistical models to predict winners on the PGA tour can be constructed. The models 
 constructed below won't be used to predict winners of individual tournaments, 
-but instead will classify a player based on if he should or shouldn't have won a
-tournament in a particular year(predicting the value of variable `Winner`) based
-on the predictor variables used earlier and `StrokeAverage`. Three different
+but instead they will be used to predict whether a player will win any 
+tournament in a particular year(predicting the value of variable `Winner`) using
+the predictor variables described earlier and `StrokeAverage`. Three different
 models will be constructed and their accuracy examined.
 
-### Logistic Regression
-A logistic model will be used to determine the probability a golfer should
+### Logistic Regression {.tabset}
+A logistic model will be used to determine the probability a golfer will
 have at least one victory in a year using the `glm()` function. The results of 
 fitting a logistic model show that only some variables appear significant, so a 
-simpler model using only those significant variables was also constructed. 
+reduced model using only significant variables was also constructed.  
+
+The variables with the largest coefficient estimates are similar to the most influential
+variables when predicting `StrokeAverage`.`StrokeAvgerage` itself was also a significant predictor. Predicted probabilities of winning during the 2019 season, along
+with the confusion matrix, are calculated below for both models. A golfer was
+predicted to win if he had a probability greater than 0.40.
+
+
 ```{r}
 #setting up training and testing set
 train = PGAdata[PGAdata$Year!=2019 , c(4:15,17,16)]
@@ -379,50 +391,81 @@ train$Winner=as.factor(train$Winner)
 test$Winner=as.factor(test$Winner)
 ```
 
+#### Full Model
 ```{r}
 log.full = glm(Winner~., data=train, family="binomial")
 summary(log.full)
+```
 
+#### Reduced Model
+```{r}
 log.simple = glm(Winner~AvgApproachGT100 + StrokeAverage + AvgClubheadSpeed +
                    AvgBallSpeed + ProxToHoleARG, data=train,
                  family="binomial")
 summary(log.simple)
 ```
 
-The values of the coefficents demonstrate the most influential varibles appear 
-to be similar to those found in the prediction of stroke average along with 
-`StrokeAvgerage` itself. Probabilities of winning during the 2019 season, along
-with their confusion matrix are calculated below for both models. A golfer was
-predicted to have won if he had a probability greater than 0.40.
+### {.unlisted .unnumbered}
 
-:::: {style="display: grid; grid-template-columns: 1fr 1fr; 
-grid-column-gap: 10px; "}
+#### Full Model {.tabset}
 
-::: {}
+##### Predictions
 ```{r}
-
-#probabilities
+#predicted probabilities of winning
 full.pred = predict(log.full, test, type="response")
-simple.pred = predict(log.simple, test, type="response")
-
 full.win = (full.pred >= .4)
+
+#correct classification rate
+CCR.logF=round(mean(full.win +1 == as.numeric(test$Winner))*100,2)
+
+PGAdata %>% 
+  filter(Year==2019) %>%
+  select(Golfer, Year, Winner) %>%
+  mutate('Pred Win Prob.'= full.pred, 
+         'Pred Winner' = full.pred>=.4)
+```
+
+##### Confusion Matrix
+The correct classification rate of the full model is `r CCR.logF`%. Although the 
+CCR is relatively high, it is worth noting that of the 32 unique winners on the PGA
+Tour in 2019, the model correctly identified only 22% of the winners, which is far less impressive than CCR suggests. These seemingly contradictory results occur because the
+majority of golfers do not win in a given year. This means we could still have a
+relatively high CCR even if we predicted no golfers would win.  
+```{r}
+#Confusion Matrices on test data
+table(`Full Pred Win` = full.win + 0, `Actual Win` = as.numeric(test$Winner)-1)
+#CCR.logF=round(mean(full.win +1 == as.numeric(test$Winner))*100,2)
+```
+
+
+---
+
+
+#### Reduced Model {.tabset}
+##### Predictions
+
+```{r}
+simple.pred = predict(log.simple, test, type="response")
 simple.win = (simple.pred >= .4)
 
-
-#Confusion Matrices on test data
-table(`Full Pred Win` = full.win + 1, `Actual Win` = as.numeric(test$Winner))
-CCR.logF=round(mean(full.win +1 ==as.numeric(test$Winner))*100,2)
-```
-:::
-:::{}
-
-```{r}
-
-table(`Simple Pred Win` = simple.win+ 1, `Actual Win` = as.numeric(test$Winner))
 CCR.logR= round(mean(simple.win +1 ==as.numeric(test$Winner))*100,2)
+
+PGAdata %>% 
+  filter(Year==2019) %>%
+  select(Golfer, Year, Winner) %>%
+  mutate('Pred Win Prob.'= simple.pred,
+         'Pred Winner' = simple.pred>=.4)
 ```
-:::
-::::
+
+##### Confusion Matrix
+The correct classification rate of the full model is `r CCR.logR`. The reduced 
+model has the same issue as seen with the full model.
+```{r}
+#Confusion matrix on test data
+table(`Simple Pred Win` = simple.win+ 1, `Actual Win` = as.numeric(test$Winner))
+```
+
+<br>  
 
 ### Support Vector Machine
 A support vector machine classifier was implemented using the `svm()` function 
@@ -442,12 +485,17 @@ svm.pred = predict(tuned.svm$best.model, test, probability = TRUE)
 svm.win = attr(svm.pred, "p")[,1] >.4
 
 CCR.svm = round(mean(svm.win +1 ==as.numeric(test$Winner))*100,2)
-table(`Predicted Win` = svm.win + 1, `Actual Win` = as.numeric(test$Winner))
+table(`Predicted Win` = svm.win + 0, `Actual Win` = as.numeric(test$Winner)-1)
 ```
+
+The correct classification rate of the best SVM model is `r CCR.svm`%. Similar to
+the results seen using logistic regression, the SVM model did a poor job of 
+successfully identifying winners.
+
 
 
 ### Random Forest Classification 
-A random forest was also fit. The most accurate model selected considered ten
+A random forest was also fit to the data. The most accurate model used ten
 variables at each branch and had the following variable importance plot.
 ```{r fig.width=10}
 set.seed(123)
@@ -488,17 +536,16 @@ forest.pred = predict(best.forest, test, cutoff = c(.6,.40))
 table(`Predicted Win` = forest.pred, `Actual Win`=test$Winner)
 CCR.for = round(mean(forest.pred == test$Winner)*100,2)
 ```
-The random forest classification shows that the most important variable is 
-stroke average. This agrees with the summary table from the logistic regression 
-models.
+The correct classification rate using a random forest model was `r CCR.for`%, similar to the previous methods. The random forest classification shows that the most important 
+variable is stroke average. This is in agreement with the summary table from the logistic regression models.
 
 
 ### Comparison of Methods {.tabset}
 The comparison of correct classification rates shows that the accuracy for all 
 models is around 80-85%. All models underestimated the number of golfers that 
-win a tournament. The models were good at selecting the top ranked golfers in 
+win a tournament; however, the models were good at selecting the top ranked golfers in 
 the world as demonstrated by the fact that golfers such as Brooks Koepka, Rory
-McIlroy, and Xander Schauffele were predicted by multiple models.
+McIlroy, and Xander Schauffele were predicted to win a tournament by multiple models.
 
 #### Classification Rates
 
