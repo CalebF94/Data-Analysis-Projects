@@ -1,7 +1,6 @@
 ---
 title: "PGA Tour Project"
 author: "Caleb Fornshell"
-date: "11/30/2022"
 output: 
   html_document:
     toc: true
@@ -103,7 +102,7 @@ twelve predictor variables each falling into one of three groups:
 <p>&nbsp;</p>    
 ## *Exploratory Data Analysis*
 ******
-To begin, the number of golfers from each year is determined. The barplot shows
+To begin, the number of golfers from each year is calculated. The barplot shows
 there were between 180-190 golfers each season.
 ```{r, message=FALSE, fig.height=3, fig.align="center"}
 #Number of qualified golfers each season
@@ -177,8 +176,7 @@ ggcorrplot::ggcorrplot(cor(pred), method = "square", type = "upper", ggtheme = "
   theme(axis.text.x=element_text(angle=35))
 ```
 
-The EDA demonstrated that the data is complete and is not missing any values
-as the PGA kept thorough records for the seasons examined. Thus, there should be
+The EDA demonstrated that the data is complete and is not missing any values. The PGA kept thorough records for the seasons examined. Thus, there should be
 very issues in future analyses.
 
 
@@ -195,7 +193,7 @@ be split into training and test sets. The training data will be all observations
 from the seasons 2015-2018 and the test dataset will consist of observations 
 from 2019.
 
-```{r, echo=TRUE}
+```{r, echo=TRUE, class.source='fold-show'}
 train = PGAdata[PGAdata$Year!=2019 , c(4:15,17)]
 test = PGAdata[PGAdata$Year==2019 , c(4:15,17)]
 ```
@@ -203,7 +201,7 @@ In total there are `r dim(train)[1]` observations in the training set and
 `r dim(test)[1]` observations in the test set.
 
 ### K-Nearest Neighbors
-The first method used will the non-parametric method K-nearest neigbors(KNN). 
+The first method used will be the non-parametric method K-nearest neigbors(KNN). 
 The package `caret` contains the `knnreg()`function implemented here. In these 
 models the critical parameter is K, the number of neighbors. The chosen K will
 be the value that minimizes the MSE of the test data. The results of the different
@@ -248,7 +246,7 @@ packages.
 <br>   
 
 #### *Regression Tree*
-First, a simple tree. I will fit a simple tree model. Because there
+First, a simple tree. Because there
 are a relatively large number of predictors, the tree will be "trimmed" using 
 cross validation in the `prune.tree()` and `cv.tree()` functions.The tree with 
 10 "leafs" minimizes the MSE on the test set.
@@ -288,7 +286,7 @@ text(pruned.tree, pretty=0)
 Random forests are an improvement over a simple tree because this method produces many
 uncorrelated trees which results in a smaller variance. It also restricts the
 variables that are available at each break in the tree(`mtry`), so the model considers the 
-effects of all variables even if a variable is correlated with the single best predictor.
+effects of all variables even if a variable is correlated with another predictor variable.
 
 ```{r, fig.width=12}
 
@@ -323,7 +321,7 @@ varImpPlot(randomForest(StrokeAverage~., data=train, mtry=best),
 
 ```
 
-Another important feature with using tree based methods is it allows us to make
+Tree based methods also allow us to make
 a statement about which variables are most significant. The pruned tree, the unpruned
 tree and the variable importance plot all have `AvgBallSpeed` as the upper
 most variable, so we can safely say that a higher `AvgBallSpeed` is an important
@@ -364,8 +362,8 @@ SummTable
 ## *Predicting Winners* 
 *****
 In professional sports, winning is everything. Based on the years 2015-2018, 
-statistical models to predict winners on the PGA tour can be constructed. The models 
-constructed below won't be used to predict winners of individual tournaments, 
+statistical models predicting winners on the PGA tour can be constructed. These
+models won't be used to predict winners of individual tournaments, 
 but instead they will be used to predict whether a player will win any 
 tournament in a particular year(predicting the value of variable `Winner`) using
 the predictor variables described earlier and `StrokeAverage`. Three different
@@ -428,7 +426,7 @@ PGAdata %>%
 ##### Confusion Matrix
 The correct classification rate of the full model is `r CCR.logF`%. Although the 
 CCR is relatively high, it is worth noting that of the 32 unique winners on the PGA
-Tour in 2019, the model correctly identified only 22% of the winners, which is far less impressive than CCR suggests. These seemingly contradictory results occur because the
+Tour in 2019, the model correctly identified only 22% of the winners, which is far less impressive than the CCR suggests. These seemingly contradictory results occur because the
 majority of golfers do not win in a given year. This means we could still have a
 relatively high CCR even if we predicted no golfers would win.  
 ```{r}
@@ -458,7 +456,7 @@ PGAdata %>%
 ```
 
 ##### Confusion Matrix
-The correct classification rate of the full model is `r CCR.logR`. The reduced 
+The correct classification rate of the full model is `r CCR.logR`%. The reduced 
 model has the same issue as seen with the full model.
 ```{r}
 #Confusion matrix on test data
@@ -543,8 +541,8 @@ variable is stroke average. This is in agreement with the summary table from the
 ### Comparison of Methods {.tabset}
 The comparison of correct classification rates shows that the accuracy for all 
 models is around 80-85%. All models underestimated the number of golfers that 
-win a tournament; however, the models were good at selecting the top ranked golfers in 
-the world as demonstrated by the fact that golfers such as Brooks Koepka, Rory
+won a tournament; however, the models were good at selecting the top ranked golfers in 
+the world. This is demonstrated by the fact that golfers such as Brooks Koepka, Rory
 McIlroy, and Xander Schauffele were predicted to win a tournament by multiple models.
 
 #### Classification Rates
